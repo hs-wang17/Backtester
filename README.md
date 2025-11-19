@@ -39,7 +39,7 @@
 
 6. **可视化 🎨**
 
-   - `plot.py` 支持 Matplotlib PDF 和 Plotly 交互 HTML 绘图。
+   - `plot.py` 支持 Matplotlib PNG 和 Plotly 交互 HTML 绘图。
    - 可展示策略净值、超额收益及关键回测指标。
 
 7. **工具函数 🔧**
@@ -57,7 +57,7 @@ pip install pandas numpy matplotlib plotly cvxpy tqdm
 
 ---
 
-## 项目结构 🗂
+## 项目结构 💼
 
 ```
 backtester/
@@ -95,21 +95,11 @@ python run.py --scores_path "SCORES_PATH.csv"
 
 - 回测完成后，会生成以下结果文件：
 
-  - PDF 报告 📄
+  - PNG 报告 📄
 
-    ```
-    /home/user0/results/backtests/StockPredictor_20251119_043804_combined_predictions.pdf
-    ```
-
-    策略净值曲线及回测指标。
-
-    ![策略回测 PDF](./image/chart.png)
+    ![策略回测 PNG](./image/chart.png)
 
   - HTML 交互报告 🌐
-
-    ```
-    /home/user0/results/backtests/StockPredictor_20251119_043804_combined_predictions.html
-    ```
 
     可在浏览器中交互查看净值曲线、超额收益及关键指标。
 
@@ -144,10 +134,10 @@ result = run_backtest()
 print(result["info"])
 ```
 
-- PDF 报告路径示例：
+- PNG 报告路径示例：
 
   ```
-  results/backtests/StockPredictor.pdf
+  results/backtests/StockPredictor.png
   ```
 
 - HTML 交互报告路径示例：
