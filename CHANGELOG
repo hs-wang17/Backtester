@@ -1,0 +1,30 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog,
+and this project adheres to Semantic Versioning.
+
+## [Unreleased]
+### Added
+- Support for additional prediction result formats (PDF, HTML).
+- Automatic strategy name parsing from score filenames.
+- Summary statistics and backtest report enhancements.
+- README integration for charts and report links.
+
+### Changed
+- Improved argument parser to accept custom score paths.
+- Robust path handling for backtest and result directories.
+- Enhanced plotting functions and output styles.
+
+### Fixed
+- HTTP2/HTTPS Git push compatibility issues workaround.
+- Resolved missing dependency errors during backtest execution.
+- Fixed inconsistent index alignment in analysis output.
+
+## [0.1.0] - 2025-11-19
+### Added
+- Initial release of the Backtester project.
+- Backtest engine (NV calculation, strategy returns).
+- Result exporting (CSV, interactive HTML, PDF).
+- Configurable arguments and environment setup scripts.
+- Basic documentation (README, CONTRIBUTING, LICENSE).
