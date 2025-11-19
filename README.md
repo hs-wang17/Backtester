@@ -99,9 +99,9 @@ python run.py --scores_path "SCORES_PATH.csv"
 
     ![策略回测 PNG](./image/chart.png)
 
-  - HTML 交互报告 🌐
+  - HTML 交互报告 🌐（可在浏览器中交互查看净值曲线、超额收益及关键指标）
 
-    可在浏览器中交互查看净值曲线、超额收益及关键指标。
+    ![策略回测 PNG](./image/chart_ui.png)
 
 4. **查看回测数据 📊**
 
