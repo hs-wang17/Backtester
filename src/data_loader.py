@@ -18,13 +18,10 @@ upper_price = pre_close + 0.9 * (high_limit - pre_close)
 lower_price = pre_close + 0.9 * (low_limit - pre_close)
 adj = adj_factor / adj_factor.shift(1)
 zs_day = load_daily_data("idx_close")[IDX_NAME2].dropna()
-
-os.chdir(DATA_PATH)
-vwap_df = pd.read_feather("vwap.fea")
-scores = pd.read_csv(SCORES_PATH, index_col=0).sort_index().shift(1).dropna(how="all")  # .T
+vwap_df = pd.read_feather(os.path.join(DATA_PATH, "vwap.fea"))
+scores = pd.read_csv(SCORES_PATH, index_col=0).T.sort_index().shift(1).dropna(how="all")
 scores.columns = scores.columns.astype(str).str.zfill(6)
 scores = scores[scores.columns[scores.columns.str[0].isin(["0", "3", "6"])]]
 scores.index = scores.index.astype(str)
 date_list = sorted(scores.index.tolist())
-
 support_dates = sorted(os.listdir(SUPPORT_PATH))

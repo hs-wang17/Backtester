@@ -7,9 +7,34 @@ from src.utils import get_daily_price, get_daily_support
 from src.portfolio_optimizer import solve_problem
 from src.account import account
 from src.analysis import analyse
+from src.plot import plot
 
 
 def run_backtest():
+    """
+    Run backtest on the given dataset.
+
+    Parameters
+    ----------
+    INITIAL_MONEY : float
+        The initial amount of money used for backtesting.
+    STK_HOLD_LIMIT : float
+        The limit of holding stock.
+    STK_BUY_R : float
+        The rate of buying stock.
+    TURN_MAX : float
+        The maximum rate of buying stock.
+    CITIC_LIMIT : float
+        The limit of CITIC.
+    CMVG_LIMIT : float
+        The limit of CMVG.
+    OTHER_LIMIT : float
+        The limit of other style metrics.
+
+    Returns
+    -------
+    A dictionary containing the backtesting result.
+    """
     s = account(INITIAL_MONEY)
     account_s = {}
     cash_s = {}
@@ -121,5 +146,9 @@ def run_backtest():
     )
     nv = pd.concat([zs_day.reindex(tot_s.index), tot_s["tot_account"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
-    info, _, _ = analyse(nv, plotting=True, strategy=STRATEGY_NAME)
+    # info, _, _ = analyse(nv, plotting=True, strategy=STRATEGY_NAME)
+
+    info, nv_df, rel_nv = analyse(nv)
+    plot(nv_df, rel_nv, info, strategy=STRATEGY_NAME, scores_path=SCORES_PATH)
+
     return {"tot_account_s": tot_s, "nv": nv, "info": info, "hold_style": pd.DataFrame(hold_style_dict).T}

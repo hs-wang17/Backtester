@@ -8,6 +8,35 @@ data_cache = {"daily_price": {}, "daily_support": {}}
 
 
 def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df):
+    """
+    Get the daily price data for a given date.
+
+    Parameters
+    ----------
+    date : str
+        The date for which to retrieve the daily price data.
+    vwap_df : pandas.DataFrame
+        The dataframe containing vwap data.
+    close : pandas.DataFrame
+        The dataframe containing close data.
+    pre_close : pandas.DataFrame
+        The dataframe containing pre-close data.
+    adj : pandas.DataFrame
+        The dataframe containing adj data.
+    scores : pandas.DataFrame
+        The dataframe containing scores data.
+    upper_price : pandas.DataFrame
+        The dataframe containing upper price data.
+    lower_price : pandas.DataFrame
+        The dataframe containing lower price data.
+    last_zt_df : pandas.DataFrame
+        The dataframe containing last_zt data.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the daily price data for the given date.
+    """
     if date not in data_cache["daily_price"]:
         data_cache["daily_price"][date] = (
             vwap_df.loc[date].dropna(),
@@ -23,6 +52,19 @@ def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, l
 
 
 def get_daily_support(str_date):
+    """
+    Get the daily support data for a given date.
+
+    Parameters
+    ----------
+    str_date : str
+        The date for which to retrieve the daily support data.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the daily support data for the given date.
+    """
     if str_date not in data_cache["daily_support"]:
         os.chdir(SUPPORT_PATH)
         last_date = [x for x in support_dates if x < str_date[:8]][-1]

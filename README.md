@@ -1,93 +1,165 @@
-# backtester
+# 📈 Backtester 项目
 
+本项目是一个基于 Python 的量化投资策略回测框架，旨在对多因子策略进行历史回测、组合优化、持仓管理和可视化分析。框架支持股票日度数据回测，并集成了交易约束、持仓优化和策略绩效评估功能。
 
+---
 
-## Getting started
+## 功能特性 ✨
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+1. **账户与交易管理 💰**
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+   - `account.py` 提供账户和股票持仓管理类，实现买入、卖出、每日刷新及交易日志记录。
+   - 支持交易费、最小交易量、单位交易量等约束。
 
-## Add your files
+2. **数据加载 📊**
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+   - `data_loader.py` 负责从 feather 文件和 CSV 文件加载日度行情、前复权因子、涨跌停价及指数数据。
+   - 支持每日可交易股票筛选及复权处理。
+
+3. **组合优化 🧮**
+
+   - `portfolio_optimizer.py` 使用 CVXPY 求解组合优化问题。
+   - 支持多种约束，包括持仓上下限、行业/风格暴露、最大换手率、指数成分偏离等。
+
+4. **回测引擎 ⚡**
+
+   - `backtest.py` 提供完整回测流程：
+
+     - 开盘前刷新账户信息
+     - 基于组合优化生成每日目标持仓
+     - 执行买卖操作并更新账户
+     - 记录每日账户净值、现金、持仓和交易明细
+
+   - 支持多策略和指数比较。
+
+5. **策略分析 📈**
+
+   - `analysis.py` 提供绩效指标计算，包括年化收益、波动、夏普比率、最大回撤、Calmar 比率、信息比率等。
+   - 计算超额收益及连续亏损天数等指标。
+
+6. **可视化 🎨**
+
+   - `plot.py` 支持 Matplotlib PDF 和 Plotly 交互 HTML 绘图。
+   - 可展示策略净值、超额收益及关键回测指标。
+
+7. **工具函数 🔧**
+
+   - `utils.py` 提供每日行情和支持数据缓存、加载工具，提升回测效率。
+
+---
+
+## 安装依赖 🛠
+
+```bash
+# 建议使用 Python 3.12
+pip install pandas numpy matplotlib plotly cvxpy tqdm
+```
+
+---
+
+## 项目结构 🗂
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.fedge.cn/hariswang/backtester.git
-git branch -M main
-git push -uf origin main
+backtester/
+│-- run.py                # 回测入口
+└-- src
+    │-- account.py        # 账户和股票管理 💰
+    │-- analysis.py       # 回测结果分析 📈
+    │-- backtest.py       # 回测主逻辑 ⚡
+    │-- config.py         # 配置参数 ⚙️
+    │-- data_loader.py    # 数据加载 📊
+    │-- plot.py           # 回测可视化 🎨
+    │-- portfolio_optimizer.py  # 组合优化 🧮
+    └-- utils.py          # 工具函数 🔧
 ```
 
-## Integrate with your tools
+## 使用说明 📝
 
-- [ ] [Set up project integrations](https://gitlab.fedge.cn/hariswang/backtester/-/settings/integrations)
+1. **配置数据与参数 ⚙️**
 
-## Collaborate with your team
+   - 修改 `config.py` 中的 `DATA_PATH`、`DAILY_DATA_PATH`、`SCORES_PATH` 等路径为本地数据文件路径。
+   - 设置回测参数，如初始资金、持仓限制、买入比例等。
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+2. **准备数据 📂**
 
-## Test and Deploy
+   - 日度行情数据 feather 文件：`stk_close`, `stk_preclose`, `stk_adjfactor`, `stk_ztprice`, `stk_dtprice` 等。
+   - 指数数据 feather 文件：`idx_close`。
+   - 策略评分 CSV 文件：`predictions/SCORES_PATH.csv`。
+   - 支持文件 feather 文件：风格、行业、指数成分等。
 
-Use the built-in continuous integration in GitLab.
+3. **运行回测 ▶️**
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+```bash
+python run.py --scores_path "SCORES_PATH.csv"
+```
 
-***
+- 回测完成后，会生成以下结果文件：
 
-# Editing this README
+  - PDF 报告 📄
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+    ```
+    /home/user0/results/backtests/StockPredictor_20251119_043804_combined_predictions.pdf
+    ```
 
-## Suggestions for a good README
+    策略净值曲线及回测指标。
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+    ![策略回测 PDF](./image/chart.png)
 
-## Name
-Choose a self-explaining name for your project.
+  - HTML 交互报告 🌐
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+    ```
+    /home/user0/results/backtests/StockPredictor_20251119_043804_combined_predictions.html
+    ```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+    可在浏览器中交互查看净值曲线、超额收益及关键指标。
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+4. **查看回测数据 📊**
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+   - `run_backtest()` 返回回测结果字典：
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+     ```python
+     result = run_backtest()
+     print(result["info"])  # 回测总览指标
+     print(result["tot_account_s"])  # 每日账户净值、现金、买卖金额
+     print(result["hold_style"])  # 持仓风格偏离
+     ```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## 回测指标说明 📊
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+- **年化收益 / 年化波动 / 夏普比率**
+- **累计收益 / 最大回撤 / Calmar 比率**
+- **超额年化收益 / 信息比率 / 超额最大回撤**
+- **最大连续亏损天数 / 胜率(天)**
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+---
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## 快速示例 💡
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```python
+from src.backtest import run_backtest
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+result = run_backtest()
 
-## License
-For open source projects, say how it is licensed.
+# 查看回测总览
+print(result["info"])
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- PDF 报告路径示例：
+
+  ```
+  results/backtests/StockPredictor.pdf
+  ```
+
+- HTML 交互报告路径示例：
+
+  ```
+  results/backtests/StockPredictor.html
+  ```
+
+---
+
+## 开发与扩展 🔧
+
+- 可扩展多策略回测，只需替换 `scores` 文件。
+- 可增加交易约束，如单日最大交易量、不同交易费率等。
+- 可将组合优化替换为其他优化模型或引入机器学习预测信号。
