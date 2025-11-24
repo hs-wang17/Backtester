@@ -1,8 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
-from src.config import *
-from src.data_loader import support_dates
+import src.config as config
 
 data_cache = {"daily_price": {}, "daily_support": {}}
 
@@ -66,7 +65,8 @@ def get_daily_support(str_date):
         A tuple containing the daily support data for the given date.
     """
     if str_date not in data_cache["daily_support"]:
-        os.chdir(SUPPORT_PATH)
+        os.chdir(config.SUPPORT_PATH)
+        support_dates = sorted(os.listdir(config.SUPPORT_PATH))
         last_date = [x for x in support_dates if x < str_date[:8]][-1]
         df = pd.read_feather(last_date)
         sub_code = df.loc[(df["ipo_dates"] > 120) & (df["st"] == 0)].index.tolist()
@@ -74,9 +74,9 @@ def get_daily_support(str_date):
         citic = df[[c for c in df.columns if "citic_b_" in c]].reindex(sub_code).fillna(0)
         cmvg = df[[c for c in df.columns if "cmvg_b_" in c]].reindex(sub_code).fillna(0)
         style = df[[c for c in df.columns if "style_b_" in c]].reindex(sub_code).fillna(0)
-        mem = df[IDX_NAME + "_member"].reindex(sub_code).dropna()
-        zz_citic = df.loc["idx_" + IDX_NAME, citic.columns]
-        zz_cmvg = df.loc["idx_" + IDX_NAME, cmvg.columns]
-        zz_style = df.loc["idx_" + IDX_NAME, style.columns]
+        mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        zz_citic = df.loc["idx_" + config.IDX_NAME, citic.columns]
+        zz_cmvg = df.loc["idx_" + config.IDX_NAME, cmvg.columns]
+        zz_style = df.loc["idx_" + config.IDX_NAME, style.columns]
         data_cache["daily_support"][str_date] = (citic, cmvg, mem, zz_citic, zz_cmvg, style, zz_style, sub_code)
     return data_cache["daily_support"][str_date]

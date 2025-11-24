@@ -40,4 +40,4 @@ STK_HOLD_LIMIT = 0.0106  # 个股持仓限制
 OTHER_LIMIT = 1.08  # 其他指标限制
 STK_BUY_R = 0.0072  # 个股买入比例
 TURN_MAX = 0.09  # 个股最大买入比例
-MEM_HOLD = 0  # 个股持仓限制
+MEM_HOLD = 0  # 成员股持仓限制

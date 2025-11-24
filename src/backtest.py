@@ -1,8 +1,8 @@
+import os
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
-from src.config import *
-from src.data_loader import *
+import src.config as config
 from src.utils import get_daily_price, get_daily_support
 from src.portfolio_optimizer import solve_problem
 from src.account import account
@@ -10,7 +10,28 @@ from src.analysis import analyse
 from src.plot import plot
 
 
+def load_daily_data(name):
+    return pd.read_feather(os.path.join(config.DAILY_DATA_PATH, f"{name}.feather"))
+
+
 def run_backtest():
+    high_limit = load_daily_data("stk_ztprice").replace(0, np.nan).ffill()
+    low_limit = load_daily_data("stk_dtprice").replace(0, np.nan).ffill()
+    pre_close = load_daily_data("stk_preclose").replace(0, np.nan).ffill()
+    adj_factor = load_daily_data("stk_adjfactor").replace(0, np.nan).ffill()
+    close = load_daily_data("stk_close").replace(0, np.nan).ffill()
+    last_zt_df = (close == high_limit).shift(1).fillna(False).astype(int)
+    upper_price = pre_close + 0.9 * (high_limit - pre_close)
+    lower_price = pre_close + 0.9 * (low_limit - pre_close)
+    adj = adj_factor / adj_factor.shift(1)
+    zs_day = load_daily_data("idx_close")[config.IDX_NAME2].dropna()
+    vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
+    scores = pd.read_csv(config.SCORES_PATH, index_col=0).T.sort_index().shift(1).dropna(how="all")
+    scores.columns = scores.columns.astype(str).str.zfill(6)
+    scores = scores[scores.columns[scores.columns.str[0].isin(["0", "3", "6"])]]
+    scores.index = scores.index.astype(str)
+    date_list = sorted(scores.index.tolist())
+
     """
     Run backtest on the given dataset.
 
@@ -35,7 +56,7 @@ def run_backtest():
     -------
     A dictionary containing the backtesting result.
     """
-    s = account(INITIAL_MONEY)
+    s = account(config.INITIAL_MONEY)
     account_s = {}
     cash_s = {}
     buy_s = {}
@@ -51,12 +72,12 @@ def run_backtest():
         td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support(str(date))
         code_list = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # 今日可交易
         code_list = [x for x in code_list if (x in sub_code_list) & (x[0] != "4") & (x[0] != "8")]  # 剔除新股,ST股票,北交所股票
-        stk_perm = (td_mem + td_mem.max()) * (STK_HOLD_LIMIT / (2 * td_mem.max()))
+        stk_perm = (td_mem + td_mem.max()) * (config.STK_HOLD_LIMIT / (2 * td_mem.max()))
         zt_codes = last_zt[last_zt == 1].index.tolist()
 
         # 开盘前刷新参数
         account0 = s.refresh_open(td_upper, td_lower, td_preclose.to_dict(), td_adj)
-        stk_buy_amt = pd.Series([STK_BUY_R * account0] * len(code_list), index=code_list)
+        stk_buy_amt = pd.Series([config.STK_BUY_R * account0] * len(code_list), index=code_list)
         for code in zt_codes:
             if code in code_list:
                 stk_buy_amt[code] = 0
@@ -75,24 +96,24 @@ def run_backtest():
                 x_last=last_hold,
                 score0=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
                 stk_low0=((td_mem - stk_perm).clip(0) * account0).clip(
-                    upper=last_hold + stk_buy_amt, lower=last_hold - 2 * STK_BUY_R * account0
+                    upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * account0
                 ),  # 每日卖出额为2份，则个股持仓额下限进考虑指数成分股偏离
                 stk_high0=((td_mem + stk_perm) * account0).clip(
-                    upper=last_hold + stk_buy_amt, lower=last_hold - 2 * STK_BUY_R * account0
+                    upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * account0
                 ),  # 考虑指数成分股偏离上限，以及个股当日最多可买一份
                 tot_amt0=1.01 * account0,  # 适当增加买入任务金额, 避免买入失败而空仓
-                sell_max0=account0 * TURN_MAX,
+                sell_max0=account0 * config.TURN_MAX,
                 td_mem0=(td_mem > 0).astype(int),
-                td_mem_amt0=MEM_HOLD * account0,
+                td_mem_amt0=config.MEM_HOLD * account0,
                 td_ind0=td_citic,
-                td_ind_up0=((zz_citic + CITIC_LIMIT) * account0),
-                td_ind_down0=((zz_citic - CITIC_LIMIT) * account0),
+                td_ind_up0=((zz_citic + config.CITIC_LIMIT) * account0),
+                td_ind_down0=((zz_citic - config.CITIC_LIMIT) * account0),
                 td_cmvg0=td_cmvg,
-                td_cmvg_up0=((zz_cmvg + CMVG_LIMIT) * account0),
-                td_cmvg_down0=((zz_cmvg - CMVG_LIMIT) * account0),
+                td_cmvg_up0=((zz_cmvg + config.CMVG_LIMIT) * account0),
+                td_cmvg_down0=((zz_cmvg - config.CMVG_LIMIT) * account0),
                 td_style=style_fac,
-                style_up0=((zz_style + OTHER_LIMIT) * account0),
-                style_down0=((zz_style - OTHER_LIMIT) * account0),
+                style_up0=((zz_style + config.OTHER_LIMIT) * account0),
+                style_down0=((zz_style - config.OTHER_LIMIT) * account0),
                 solver="SCIPY",
             )
 
@@ -101,7 +122,7 @@ def run_backtest():
         except:
             # 当组合求解失败, 默认向指数成分股靠拢换手率比例
             print(date, "no target hold, move toward index")
-            tgt_hold = last_hold * (1 - TURN_MAX) + td_mem.reindex(code_list).fillna(0) * TURN_MAX * s.tot_account
+            tgt_hold = last_hold * (1 - config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * config.TURN_MAX * s.tot_account
 
         # 根据目标持仓，得到交易任务
         sort_index = td_score.sort_values(ascending=False).index
@@ -149,6 +170,6 @@ def run_backtest():
     # info, _, _ = analyse(nv, plotting=True, strategy=STRATEGY_NAME)
 
     info, nv_df, rel_nv = analyse(nv)
-    plot(nv_df, rel_nv, info, strategy=STRATEGY_NAME, scores_path=SCORES_PATH)
+    plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH)
 
     return {"tot_account_s": tot_s, "nv": nv, "info": info, "hold_style": pd.DataFrame(hold_style_dict).T}
