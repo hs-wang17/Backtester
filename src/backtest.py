@@ -153,12 +153,16 @@ def run_backtest():
         trade_df_dict[date] = trade_df
 
         hold_weight = hold_df["amt"] / hold_df["amt"].sum()
-        td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic
-        td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg
-        td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style
+        td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic  # 行业偏离
+        td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg  # 市值偏离
+        td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style  # 风格偏离
         td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
+        td_hold_num = len(hold_weight)
+        td_turnover = (buy_s[date] + sell_s[date]) / account_s[date] * 0.5
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
         td_diff["idx_hold"] = td_MEM_HOLD
+        td_diff["hold_num"] = td_hold_num
+        td_diff["turnover"] = td_turnover
         hold_style_dict[date] = td_diff
 
     # 结果汇总
@@ -168,8 +172,9 @@ def run_backtest():
     nv = pd.concat([zs_day.reindex(tot_s.index), tot_s["tot_account"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
     # info, _, _ = analyse(nv, plotting=True, strategy=STRATEGY_NAME)
+    hold_style = pd.DataFrame(hold_style_dict).T
 
     info, nv_df, rel_nv = analyse(nv)
-    plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH)
+    plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
-    return {"tot_account_s": tot_s, "nv": nv, "info": info, "hold_style": pd.DataFrame(hold_style_dict).T}
+    return {"tot_account_s": tot_s, "nv": nv, "info": info, "hold_style": hold_style}

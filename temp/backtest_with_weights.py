@@ -8,8 +8,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import os
-from src.config import *
-from src.data_loader import *
+import src.config as config
 from src.utils import get_daily_price, get_daily_support
 from src.account import account
 from src.analysis import analyse
@@ -52,7 +51,22 @@ def load_target_weights(date, weights_dir="/home/user0/temp/Vanmine_20251120"):
         return None
 
 
+def load_daily_data(name):
+    return pd.read_feather(os.path.join(config.DAILY_DATA_PATH, f"{name}.feather"))
+
+
 def run_backtest_with_weights():
+    high_limit = load_daily_data("stk_ztprice").replace(0, np.nan).ffill()
+    low_limit = load_daily_data("stk_dtprice").replace(0, np.nan).ffill()
+    pre_close = load_daily_data("stk_preclose").replace(0, np.nan).ffill()
+    adj_factor = load_daily_data("stk_adjfactor").replace(0, np.nan).ffill()
+    close = load_daily_data("stk_close").replace(0, np.nan).ffill()
+    last_zt_df = (close == high_limit).shift(1).fillna(False).astype(int)
+    upper_price = pre_close + 0.9 * (high_limit - pre_close)
+    lower_price = pre_close + 0.9 * (low_limit - pre_close)
+    adj = adj_factor / adj_factor.shift(1)
+    zs_day = load_daily_data("idx_close")[config.IDX_NAME2].dropna()
+    vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
     """
     使用预计算权重的回测函数
 
@@ -61,7 +75,7 @@ def run_backtest_with_weights():
     dict
         包含回测结果的字典
     """
-    s = account(INITIAL_MONEY)
+    s = account(config.INITIAL_MONEY)
     account_s = {}
     cash_s = {}
     buy_s = {}
@@ -82,7 +96,7 @@ def run_backtest_with_weights():
 
         # 获取当日数据
         td_open, td_close, td_preclose, td_adj, td_score, td_upper, td_lower, last_zt = get_daily_price(
-            str(date), vwap_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df
+            str(date), vwap_df, close, pre_close, adj, target_weights, upper_price, lower_price, last_zt_df
         )
         td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support(str(date))
 
@@ -95,7 +109,7 @@ def run_backtest_with_weights():
 
         # 开盘前刷新参数
         account0 = s.refresh_open(td_upper, td_lower, td_preclose.to_dict(), td_adj)
-        stk_buy_amt = pd.Series([STK_BUY_R * account0] * len(code_list), index=code_list)
+        stk_buy_amt = pd.Series([config.STK_BUY_R * account0] * len(code_list), index=code_list)
         for code in zt_codes:
             if code in code_list:
                 stk_buy_amt[code] = 0
@@ -167,17 +181,17 @@ def run_backtest_with_weights():
         trade_df_dict[date] = trade_df
 
         # 计算持仓风格偏离
-        if not hold_df.empty and len(hold_df) > 0:
-            hold_weight = hold_df["amt"] / hold_df["amt"].sum()
-            td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic
-            td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg
-            td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style
-            td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
-            td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
-            td_diff["idx_hold"] = td_MEM_HOLD
-        else:
-            td_diff = pd.Series([0, 0, 0, 0], index=["citic_diff", "cmvg_diff", "style_diff", "idx_hold"])
-
+        hold_weight = hold_df["amt"] / hold_df["amt"].sum()
+        td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic  # 行业偏离
+        td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg  # 市值偏离
+        td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style  # 风格偏离
+        td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
+        td_hold_num = (hold_weight > 0).sum()
+        td_turnover = (buy_s[date] + sell_s[date]) / account_s[date] * 0.5
+        td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
+        td_diff["idx_hold"] = td_MEM_HOLD
+        td_diff["hold_num"] = td_hold_num
+        td_diff["turnover"] = td_turnover
         hold_style_dict[date] = td_diff
 
     # 结果汇总
@@ -186,11 +200,13 @@ def run_backtest_with_weights():
     )
     nv = pd.concat([zs_day.reindex(tot_s.index), tot_s["tot_account"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
+    # info, _, _ = analyse(nv, plotting=True, strategy=STRATEGY_NAME)
+    hold_style = pd.DataFrame(hold_style_dict).T
 
     info, nv_df, rel_nv = analyse(nv)
-    plot(nv_df, rel_nv, info, strategy="Vanmine_20251120", scores_path="Vanmine_20251120")
+    plot(nv_df, rel_nv, info, strategy="Vanmine_20251120", scores_path=config.SCORES_PATH, hold_style=hold_style)
 
-    return {"tot_account_s": tot_s, "nv": nv, "info": info, "hold_style": pd.DataFrame(hold_style_dict).T}
+    return {"tot_account_s": tot_s, "nv": nv, "info": info, "hold_style": hold_style}
 
 
 if __name__ == "__main__":

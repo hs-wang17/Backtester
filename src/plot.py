@@ -3,76 +3,141 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
+import pandas as pd
 
 plt.rcParams.update({"font.sans-serif": ["WenQuanYi Micro Hei"], "axes.unicode_minus": False, "font.size": 12})
 
 
-def plot(nv_df, rel_nv, info, strategy=None, scores_path=None):
+def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None, hold_style: pd.DataFrame = None):
     """
-    Plot strategy performance.
-    Supports both Matplotlib png and Plotly interactive HTML.
+    修正版 plot：
+    - 统一使用 datetime 类型的 x 轴（pd.to_datetime）
+    - 避免将 x 转为字符串再混合使用 range，防止 Plotly 不显示线
     """
-    # ---------------- Matplotlib png ----------------
-    plot_df = nv_df.copy()
-    plot_df["超额净值"] = rel_nv
-    plot_df.fillna(1, inplace=True)
 
-    fig, ax = plt.subplots(figsize=(16, 6))
-    plt.subplots_adjust(right=0.65)
-    plot_df.plot(ax=ax, grid=True, title=f"基于{strategy}的策略回测结果")
+    if hold_style is None or not isinstance(hold_style, pd.DataFrame):
+        raise ValueError("需要提供 hold_style DataFrame")
 
-    # 添加右侧文本
-    text_keys = []
-    text_vals = []
-    text_keys.append("策略回测指标")
-    text_vals.append("")
+    cmvg_cols = [c for c in hold_style.columns if "cmvg" in c]
+    style_cols = [c for c in hold_style.columns if "style" in c]
+
+    hold_num_col = "hold_num"
+    idx_hold_col = "idx_hold"
+    turnover_col = "turnover"
+
+    # ========== 准备净值数据 ==========
+    plot_df = net_value_df.copy()
+    try:
+        plot_df["超额"] = relative_net_value
+    except Exception:
+        plot_df["超额"] = pd.Series(relative_net_value, index=plot_df.index)
+    plot_df = plot_df.fillna(method="ffill").fillna(1)
+
+    # 统一将 indices 转为 datetime（若已是 datetime 则无变化）
+    try:
+        plot_df_index_dt = pd.to_datetime(plot_df.index)
+    except Exception:
+        plot_df_index_dt = plot_df.index
+
+    try:
+        hold_index_dt = pd.to_datetime(hold_style.index)
+    except Exception:
+        hold_index_dt = hold_style.index
+
+    # 计算联合 x_range（使用 datetime 类型）
+    try:
+        combined = pd.Index(list(plot_df_index_dt) + list(hold_index_dt))
+        x_min = combined.min()
+        x_max = combined.max()
+        x_range = [x_min, x_max]
+    except Exception:
+        x_range = None
+
+    # ========== Matplotlib: PNG ==========
+    fig = plt.figure(figsize=(18, 16))
+    gs = fig.add_gridspec(3, 2, height_ratios=[3, 1.5, 1.5], wspace=0.25, hspace=0.35)
+
+    ax_main = fig.add_subplot(gs[0, :])
+    plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果")
+    ax_main.set_xlabel("")
+    ax_main.legend(loc="upper left", fontsize=9)
+
+    # 右侧文本
+    text_keys = ["策略回测指标"]
+    text_vals = [""]
     for k, v in info.items():
         text_keys.append(k)
         if isinstance(v, (float, np.floating)):
-            if "收益" in k or "回撤" in k or "波动" in k:
+            if "天数" in k:
+                text_vals.append(int(v))
+            elif "收益" in k or "回撤" in k or "波动" in k:
                 text_vals.append(f"{v*100:7.2f}%")
             else:
                 text_vals.append(f"{v:7.4f}")
         else:
             text_vals.append(str(v))
 
-    y_pos = np.linspace(0.9, 0.1, len(text_keys))
+    y_pos = np.linspace(0.8, 0.2, len(text_keys))
     for y, k, v in zip(y_pos, text_keys, text_vals):
-        fig.text(0.70, y, k, fontsize=9, va="center", ha="left", family="WenQuanYi Micro Hei")
-        fig.text(0.90, y, v, fontsize=9, va="center", ha="right", family="WenQuanYi Micro Hei")
+        fig.text(1, y, k, fontsize=12, ha="left", family="WenQuanYi Micro Hei")
+        fig.text(1.2, y, v, fontsize=12, ha="right", family="WenQuanYi Micro Hei")
+
+    ax_cmvg = fig.add_subplot(gs[1, 0])
+    hold_style[cmvg_cols].plot(ax=ax_cmvg, grid=True, legend=True)
+    ax_cmvg.set_title("市值偏离")
+    ax_cmvg.tick_params(axis="x", labelrotation=30)
+
+    ax_holdnum = fig.add_subplot(gs[1, 1])
+    hold_style[[hold_num_col]].plot(ax=ax_holdnum, grid=True, legend=True)
+    ax_holdnum.set_title("持股数量")
+    ax_holdnum.tick_params(axis="x", labelrotation=30)
+
+    ax_style = fig.add_subplot(gs[2, 0])
+    hold_style[style_cols].plot(ax=ax_style, grid=True, legend=True)
+    ax_style.set_title("风格偏离")
+    ax_style.tick_params(axis="x", labelrotation=30)
+
+    ax_mix = fig.add_subplot(gs[2, 1])
+    mix_cols = [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]
+    hold_style[mix_cols].plot(ax=ax_mix, grid=True, legend=True)
+    ax_mix.set_title("成分股占比 / 换手率")
+    ax_mix.tick_params(axis="x", labelrotation=30)
 
     png_path = f"/home/user0/results/backtests/{strategy}.png" if strategy else "/home/user0/results/backtests/strategy.png"
     fig.savefig(png_path, format="png", bbox_inches="tight")
     plt.close(fig)
     print(f"PNG 已保存: {png_path}")
 
-    # ---------------- Plotly 可交互 HTML ----------------
-    # Plotly interactive HTML
+    # ========== Plotly: 使用 datetime x ==========
     html_path = f"/home/user0/results/backtests/{strategy}.html" if strategy else "/home/user0/results/backtests/strategy.html"
 
-    # Create subplots: 1 row, 2 columns (graph left, table right)
     fig_plotly = make_subplots(
-        rows=1, cols=2, specs=[[{"type": "xy"}, {"type": "table"}]], column_widths=[0.7, 0.3], subplot_titles=("净值曲线", "策略回测指标")
+        rows=3,
+        cols=2,
+        specs=[[{"type": "xy"}, {"type": "table"}], [{"type": "xy"}, {"type": "xy"}], [{"type": "xy"}, {"type": "xy"}]],
+        column_widths=[0.65, 0.35],
+        row_heights=[0.45, 0.275, 0.275],
+        subplot_titles=["净值曲线", "策略回测指标", "市值偏离", "持股数量", "风格偏离", "成分股占比 / 换手率"],
     )
 
-    # Add traces to graph (left)
     for col in plot_df.columns:
-        fig_plotly.add_trace(go.Scatter(x=plot_df.index, y=plot_df[col], mode="lines", name=col), row=1, col=1)
+        fig_plotly.add_trace(go.Scatter(x=plot_df_index_dt, y=plot_df[col].values, mode="lines", name=str(col), showlegend=True), row=1, col=1)
 
-    # Prepare table data
+    # 指标表
     headers = ["指标", "值"]
     cells = [[], []]
     for k, v in info.items():
         cells[0].append(k)
         if isinstance(v, (float, np.floating)):
-            if "收益" in k or "回撤" in k or "波动" in k:
+            if "天数" in k:
+                cells[1].append(int(v))
+            elif "收益" in k or "回撤" in k or "波动" in k:
                 cells[1].append(f"{v*100:.2f}%")
             else:
                 cells[1].append(f"{v:.4f}")
         else:
             cells[1].append(str(v))
 
-    # Add table (right)
     fig_plotly.add_trace(
         go.Table(
             header=dict(values=headers, font=dict(family="WenQuanYi Micro Hei", size=12)),
@@ -82,8 +147,22 @@ def plot(nv_df, rel_nv, info, strategy=None, scores_path=None):
         col=2,
     )
 
-    # Update layout
-    fig_plotly.update_layout(title=f"基于{strategy}的策略回测结果", height=600, width=1200, xaxis_title="日期", yaxis_title="净值")
+    for col in cmvg_cols:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=2, col=1)
+    fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[hold_num_col].values, mode="lines", name=hold_num_col, showlegend=True), row=2, col=2)
+    for col in style_cols:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=1)
+    for col in mix_cols:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=2)
+
+    # 统一 x 轴范围（datetime）
+    fig_plotly.update_xaxes(range=x_range, row=1, col=1)
+    fig_plotly.update_xaxes(range=x_range, row=2, col=1)
+    fig_plotly.update_xaxes(range=x_range, row=2, col=2)
+    fig_plotly.update_xaxes(range=x_range, row=3, col=1)
+    fig_plotly.update_xaxes(range=x_range, row=3, col=2)
+    fig_plotly.update_yaxes(title_text="净值", row=1, col=1)
+    fig_plotly.update_layout(height=1300, width=1500, title=f"基于{strategy}的策略回测结果", legend=dict(traceorder="normal"))
 
     pio.write_html(fig_plotly, file=html_path, auto_open=False)
     print(f"可交互 HTML 已保存: {html_path}")

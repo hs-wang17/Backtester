@@ -36,17 +36,41 @@ def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, l
     tuple
         A tuple containing the daily price data for the given date.
     """
-    if date not in data_cache["daily_price"]:
+    if scores is None:
         data_cache["daily_price"][date] = (
             vwap_df.loc[date].dropna(),
             close.loc[date].dropna(),
             pre_close.loc[date].dropna(),
             adj.loc[date].replace(1, np.nan).dropna().to_dict(),
-            scores.loc[date].dropna(),
+            None,
             upper_price.loc[date].dropna(),
             lower_price.loc[date].dropna(),
             last_zt_df.loc[date].dropna(),
         )
+    elif isinstance(scores, pd.Series):  # 如果 scores 是 Series
+        data_cache["daily_price"][date] = (
+            vwap_df.loc[date].dropna(),
+            close.loc[date].dropna(),
+            pre_close.loc[date].dropna(),
+            adj.loc[date].replace(1, np.nan).dropna().to_dict(),
+            scores.dropna(),
+            upper_price.loc[date].dropna(),
+            lower_price.loc[date].dropna(),
+            last_zt_df.loc[date].dropna(),
+        )
+    else:  # 如果 scores 是 DataFrame
+        if date not in data_cache["daily_price"]:
+            data_cache["daily_price"][date] = (
+                vwap_df.loc[date].dropna(),
+                close.loc[date].dropna(),
+                pre_close.loc[date].dropna(),
+                adj.loc[date].replace(1, np.nan).dropna().to_dict(),
+                scores.loc[date].dropna(),
+                upper_price.loc[date].dropna(),
+                lower_price.loc[date].dropna(),
+                last_zt_df.loc[date].dropna(),
+            )
+
     return data_cache["daily_price"][date]
 
 
