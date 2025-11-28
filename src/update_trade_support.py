@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+import datetime
 
 # ==================== 路径配置 ====================
 save_path = r"/home/user0/project/backtester/data/trade_support5"  # 每日特征输出路径
@@ -19,9 +20,7 @@ def load_daily_data(name):
 # ==================== 基础数据准备 ====================
 citic1 = load_daily_data("stk_citic1_name").ffill()  # 中信一级行业分类
 date_list = citic1.index.tolist()  # 所有交易日列表
-ipo_dates = (
-    load_daily_data("stk_adjclose").replace(0, np.nan).ffill() > 0
-).cumsum()  # 上市天数（首次有复权收盘价算第1天）
+ipo_dates = (load_daily_data("stk_adjclose").replace(0, np.nan).ffill() > 0).cumsum()  # 上市天数（首次有复权收盘价算第1天）
 
 is_st = load_daily_data("stk_is_st_stock")
 is_stop = load_daily_data("stk_is_stop_stock")
@@ -172,6 +171,7 @@ for date in tqdm(date_list[150:], desc="生成每日特征文件"):  # 前150天
     # 保存
     os.chdir(save_path)
     feat.fillna(0).to_feather(f"{date}.fea")
+    feat.fillna(0).to_feather(f"/home/user0/share/haris/backtester/data/trade_support5/{date}.fea")
 
 
 # ==================== 计算早盘30分钟VWAP ====================
@@ -189,3 +189,6 @@ for f in tqdm(files, desc="计算早盘30分钟VWAP"):
 vwap_df = pd.DataFrame(vwap_dict).T.sort_index()
 os.chdir(backtest_path)
 vwap_df.to_feather("vwap.fea")
+vwap_df.to_feather("/home/user0/share/haris/backtester/data/vwap.fea")
+
+print("Done:", datetime.datetime.now())

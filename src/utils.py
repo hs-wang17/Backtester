@@ -36,7 +36,7 @@ def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, l
     tuple
         A tuple containing the daily price data for the given date.
     """
-    if scores is None:
+    if scores is None:  # only used when scores is not updated everyday
         data_cache["daily_price"][date] = (
             vwap_df.loc[date].dropna(),
             close.loc[date].dropna(),
@@ -47,7 +47,7 @@ def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, l
             lower_price.loc[date].dropna(),
             last_zt_df.loc[date].dropna(),
         )
-    elif isinstance(scores, pd.Series):  # 如果 scores 是 Series
+    elif isinstance(scores, pd.Series):  # if scores is Series
         data_cache["daily_price"][date] = (
             vwap_df.loc[date].dropna(),
             close.loc[date].dropna(),
@@ -58,7 +58,7 @@ def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, l
             lower_price.loc[date].dropna(),
             last_zt_df.loc[date].dropna(),
         )
-    else:  # 如果 scores 是 DataFrame
+    else:  # if scores is DataFrame
         if date not in data_cache["daily_price"]:
             data_cache["daily_price"][date] = (
                 vwap_df.loc[date].dropna(),
@@ -93,7 +93,9 @@ def get_daily_support(str_date):
         support_dates = sorted(os.listdir(config.SUPPORT_PATH))
         last_date = [x for x in support_dates if x < str_date[:8]][-1]
         df = pd.read_feather(last_date)
+        # ignore the stocks listed within 120 days (ipo) and ST stocks
         sub_code = df.loc[(df["ipo_dates"] > 120) & (df["st"] == 0)].index.tolist()
+        # ignore the stocks in 036 market (B stock, ST stock, etc.)
         sub_code = [c for c in sub_code if c[0] in "036"]
         citic = df[[c for c in df.columns if "citic_b_" in c]].reindex(sub_code).fillna(0)
         cmvg = df[[c for c in df.columns if "cmvg_b_" in c]].reindex(sub_code).fillna(0)
