@@ -60,7 +60,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     ax_main = fig.add_subplot(gs[0, :])
     plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果")
     ax_main.set_xlabel("")
-    ax_main.legend(loc="upper left", fontsize=9)
+    ax_main.legend(["策略净值", "指数净值", "超额净值"], loc="upper left", fontsize=12)
 
     # 右侧文本
     text_keys = ["策略回测指标"]
@@ -111,6 +111,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     # ========== Plotly: 使用 datetime x ==========
     html_path = f"/home/user0/results/backtests/{strategy}.html" if strategy else "/home/user0/results/backtests/strategy.html"
 
+    legend_names = ["策略净值", "指数净值", "超额净值"]
     fig_plotly = make_subplots(
         rows=3,
         cols=2,
@@ -120,8 +121,8 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         subplot_titles=["净值曲线", "策略回测指标", "市值偏离", "持股数量", "风格偏离", "成分股占比 / 换手率"],
     )
 
-    for col in plot_df.columns:
-        fig_plotly.add_trace(go.Scatter(x=plot_df_index_dt, y=plot_df[col].values, mode="lines", name=str(col), showlegend=True), row=1, col=1)
+    for col, legend_name in zip(plot_df.columns, legend_names):
+        fig_plotly.add_trace(go.Scatter(x=plot_df_index_dt, y=plot_df[col].values, mode="lines", name=legend_name, showlegend=True), row=1, col=1)
 
     # 指标表
     headers = ["指标", "值"]
