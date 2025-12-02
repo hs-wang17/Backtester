@@ -2,12 +2,12 @@ import os
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
-import src.config as config
-from src.utils import get_daily_price, get_daily_support
-from src.portfolio_optimizer import solve_problem
-from src.account import account
-from src.analysis import analyse
-from src.plot import plot
+import config as config
+from utils import get_daily_price, get_daily_support
+from portfolio_optimizer import solve_problem
+from account import account
+from analysis import analyse
+from plot import plot
 
 
 def load_daily_data(name):
@@ -219,6 +219,6 @@ def run_backtest():
     all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + "_hold_df.csv", index_label="code")
 
     info, nv_df, rel_nv = analyse(nv)
-    plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
+    # plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     return {"total_act_s": total_s, "nv": nv, "info": info, "hold_style": hold_style}
