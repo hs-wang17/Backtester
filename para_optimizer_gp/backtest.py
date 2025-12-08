@@ -7,7 +7,6 @@ from utils import get_daily_price, get_daily_support
 from portfolio_optimizer import solve_problem
 from account import account
 from analysis import analyse
-from plot import plot
 
 
 def load_daily_data(name):
