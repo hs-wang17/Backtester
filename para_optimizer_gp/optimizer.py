@@ -85,18 +85,41 @@ class HyperparameterOptimizer:
             ir = info.get("信息比率", 0)
             ex_ret = info.get("超额年化收益", 0)
             ex_std = info.get("超额年化波动", 0)
+            mean_ret = info.get("年化收益", 0)
+            max_dd = info.get("最大回撤", 0)
+            ex_max_dd = info.get("超额最大回撤", 0)
+
             if isinstance(ir, (pd.Series, pd.DataFrame)):
                 ir = float(ir.iloc[0]) if len(ir) > 0 else 0
             if isinstance(ex_ret, (pd.Series, pd.DataFrame)):
                 ex_ret = float(ex_ret.iloc[0]) if len(ex_ret) > 0 else 0
             if isinstance(ex_std, (pd.Series, pd.DataFrame)):
                 ex_std = float(ex_std.iloc[0]) if len(ex_std) > 0 else 0
+            if isinstance(mean_ret, (pd.Series, pd.DataFrame)):
+                mean_ret = float(mean_ret.iloc[0]) if len(mean_ret) > 0 else 0
+            if isinstance(max_dd, (pd.Series, pd.DataFrame)):
+                max_dd = float(max_dd.iloc[0]) if len(max_dd) > 0 else 0
+            if isinstance(ex_max_dd, (pd.Series, pd.DataFrame)):
+                ex_max_dd = float(ex_max_dd.iloc[0]) if len(ex_max_dd) > 0 else 0
+
             ir = float(ir) if pd.notnull(ir) else 0
             ex_ret = float(ex_ret) if pd.notnull(ex_ret) else 0
             ex_std = float(ex_std) if pd.notnull(ex_std) else 0
+            mean_ret = float(mean_ret) if pd.notnull(mean_ret) else 0
+            max_dd = float(max_dd) if pd.notnull(max_dd) else 0
+            ex_max_dd = float(ex_max_dd) if pd.notnull(ex_max_dd) else 0
 
             # history record
-            record = {"params": param_dict.copy(), "ir": ir, "ex_ret": ex_ret, "ex_std": ex_std, "timestamp": datetime.now().isoformat()}
+            record = {
+                "参数": param_dict.copy(),
+                "信息比率": ir,
+                "超额年化收益": ex_ret,
+                "超额年化波动": ex_std,
+                "年化收益": mean_ret,
+                "最大回撤": max_dd,
+                "超额最大回撤": ex_max_dd,
+                "时间戳": datetime.now().isoformat(),
+            }
             self.history.append(record)
 
             # base score
@@ -203,7 +226,9 @@ class HyperparameterOptimizer:
 
     def save_history(self):
         """save optimization history to JSON file"""
-        history_file = os.path.join(config.BASE_DIR, f"results/optimization_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        history_file = os.path.join(
+            config.BASE_DIR, f"results/optimization_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}_trade_support{config.TRADE_SUPPORT}.json"
+        )
         with open(history_file, "w", encoding="utf-8") as f:
             json.dump(self.history, f, indent=4, ensure_ascii=False)
         print(f"优化历史已保存到 {history_file}")

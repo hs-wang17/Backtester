@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 import pandas as pd
+import src.config as config
 
 plt.rcParams.update({"font.sans-serif": ["WenQuanYi Micro Hei"], "axes.unicode_minus": False, "font.size": 12})
 
@@ -18,7 +19,10 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     if hold_style is None or not isinstance(hold_style, pd.DataFrame):
         raise ValueError("需要提供 hold_style DataFrame")
 
-    cmvg_cols = [c for c in hold_style.columns if ("cmvg" in c) and ("." in c)]
+    if config.TRADE_SUPPORT == 5:
+        cmvg_cols = [c for c in hold_style.columns if ("cmvg" in c) and ("." in c)]
+    else:
+        cmvg_cols = [c for c in hold_style.columns if "cmvg" in c]
     style_cols = [c for c in hold_style.columns if "style" in c]
 
     hold_num_col = "hold_num"
@@ -83,6 +87,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         fig.text(1.2, y, v, fontsize=12, ha="right", family="WenQuanYi Micro Hei")
 
     ax_cmvg = fig.add_subplot(gs[1, 0])
+
     hold_style[cmvg_cols].plot(ax=ax_cmvg, grid=True, legend=True)
     ax_cmvg.set_title("市值偏离")
     ax_cmvg.tick_params(axis="x", labelrotation=30)
@@ -103,13 +108,21 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     ax_mix.set_title("成分股占比 / 换手率")
     ax_mix.tick_params(axis="x", labelrotation=30)
 
-    png_path = f"/home/user0/results/backtests/{strategy}.png" if strategy else "/home/user0/results/backtests/strategy.png"
+    png_path = (
+        f"/home/user0/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
+        if strategy
+        else "/home/user0/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
+    )
     fig.savefig(png_path, format="png", bbox_inches="tight")
     plt.close(fig)
     print(f"PNG 已保存: {png_path}")
 
     # ========== Plotly: 使用 datetime x ==========
-    html_path = f"/home/user0/results/backtests/{strategy}.html" if strategy else "/home/user0/results/backtests/strategy.html"
+    html_path = (
+        f"/home/user0/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
+        if strategy
+        else "/home/user0/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
+    )
 
     legend_names = ["策略净值", "指数净值", "超额净值"]
     fig_plotly = make_subplots(

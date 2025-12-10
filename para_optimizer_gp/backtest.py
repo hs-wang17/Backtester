@@ -3,7 +3,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import config as config
-from utils import get_daily_price, get_daily_support
+from utils import get_daily_price, get_daily_support5, get_daily_support7
 from portfolio_optimizer import solve_problem
 from account import account
 from analysis import analyse
@@ -73,7 +73,10 @@ def run_backtest():
             str(date), vwap_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df
         )
         # get daily support data
-        td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support(str(date))
+        if config.TRADE_SUPPORT == 5:
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(date))
+        else:
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(date))
         # get today's tradable stocks
         code_list = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # 今日可交易
         code_list = [x for x in code_list if (x in sub_code_list) & (x[0] != "4") & (x[0] != "8")]  # 剔除新股,ST股票,北交所股票
@@ -208,16 +211,6 @@ def run_backtest():
     nv = nv / nv.iloc[0]
     hold_style = pd.DataFrame(hold_style_dict).T
 
-    # combine all daily hold_df into a single DataFrame with date information
-    all_hold_df = pd.DataFrame()
-    for date, daily_hold_df in hold_df_dict.items():
-        daily_hold_df_copy = daily_hold_df.copy()
-        daily_hold_df_copy["date"] = date
-        all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
-
-    all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + "_hold_df.csv", index_label="code")
-
     info, nv_df, rel_nv = analyse(nv)
-    # plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     return {"total_act_s": total_s, "nv": nv, "info": info, "hold_style": hold_style}

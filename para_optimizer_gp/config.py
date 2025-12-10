@@ -6,19 +6,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = r"/home/user0/project/backtester/data"
 TEST_RESULT_PATH = r"/home/user0/project/backtester/results"
 DAILY_DATA_PATH = r"/home/user0/data/data_frames"
-SUPPORT_PATH = r"/home/user0/project/backtester/data/trade_support5"
+SUPPORT5_PATH = r"/home/user0/project/backtester/data/trade_support5"
+SUPPORT7_PATH = r"/home/user0/project/backtester/data/trade_support7"
 SCORES_PATH = r"/home/user0/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"
 HOLD_DF_PATH = r"/home/user0/results/backtests/"
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
+TRADE_SUPPORT = 5
 
 
 def update_from_args(args):
     """Update configuration from command line arguments."""
-    global SCORES_PATH, STRATEGY_NAME
+    global SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
 
     if args.scores_path:
         SCORES_PATH = args.scores_path
         STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
+        TRADE_SUPPORT = args.trade_support
 
 
 # index settings

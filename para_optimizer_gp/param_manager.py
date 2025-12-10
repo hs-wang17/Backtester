@@ -22,19 +22,30 @@ class HyperParams:
 class ParamManager:
     """hyperparameter manager for portfolio optimization"""
 
-    def __init__(self, param_file=os.path.join(config.BASE_DIR, "results/optimal_params.json")):
+    def __init__(self, param_file=os.path.join(config.BASE_DIR, f"results/optimal_params_trade_support{config.TRADE_SUPPORT}.json")):
         self.param_file = param_file
         self.params = HyperParams()
         self.eps = 1e-8
-        self.param_ranges = {
-            "CITIC_LIMIT": (self.eps, 2.0 - self.eps),
-            "CMVG_LIMIT": (self.eps, 2.0 - self.eps),
-            "STK_HOLD_LIMIT": (0.001 + self.eps, 0.02 - self.eps),
-            "OTHER_LIMIT": (self.eps, 2.0 - self.eps),
-            "STK_BUY_R": (0.001 + self.eps, 0.02 - self.eps),
-            "TURN_MAX": (0.03 + self.eps, 0.2 - self.eps),
-            "MEM_HOLD": (self.eps, 0.4 - self.eps),
-        }
+        if config.TRADE_SUPPORT == 5:
+            self.param_ranges = {
+                "CITIC_LIMIT": (self.eps, 2.0 - self.eps),
+                "CMVG_LIMIT": (self.eps, 2.0 - self.eps),
+                "STK_HOLD_LIMIT": (0.001 + self.eps, 0.02 - self.eps),
+                "OTHER_LIMIT": (self.eps, 2.0 - self.eps),
+                "STK_BUY_R": (0.001 + self.eps, 0.02 - self.eps),
+                "TURN_MAX": (0.03 + self.eps, 0.2 - self.eps),
+                "MEM_HOLD": (self.eps, 0.4 - self.eps),
+            }
+        else:
+            self.param_ranges = {
+                "CITIC_LIMIT": (self.eps, 0.5 - self.eps),
+                "CMVG_LIMIT": (self.eps, 0.5 - self.eps),
+                "STK_HOLD_LIMIT": (0.001 + self.eps, 0.02 - self.eps),
+                "OTHER_LIMIT": (self.eps, 0.5 - self.eps),
+                "STK_BUY_R": (0.001 + self.eps, 0.02 - self.eps),
+                "TURN_MAX": (0.03 + self.eps, 0.2 - self.eps),
+                "MEM_HOLD": (self.eps, 0.4 - self.eps),
+            }
 
     def set_params(self, params_dict: Dict[str, float]):
         for key, value in params_dict.items():
