@@ -36,42 +36,31 @@ else:
     IDX_NAME_CN = "沪深300"
     FUTURE_BASIS = 0.0
 
-# constraint parameters (trade_support5_params)
 INITIAL_MONEY = 200000000.0  # 初始资金
-CITIC_LIMIT = 0.06  # 行业限制 (范围0-2)
-CMVG_LIMIT = 0.2  # 市值限制 (范围0-2)
-STK_HOLD_LIMIT = 0.0106  # 个股持仓限制 (范围0-0.02)
-OTHER_LIMIT = 1.08  # 其他指标限制 (范围0-2)
-STK_BUY_R = 0.0072  # 个股买入比例 (范围0.001-0.02)
-TURN_MAX = 0.09  # 个股最大买入比例 (范围0.03-0.2)
-MEM_HOLD = 0.0  # 成员股持仓限制 (范围0-0.4)
+
+# constraint parameters
+CITIC_LIMIT = 0.06  # 行业限制
+CMVG_LIMIT = 0.2  # 市值限制
+STK_HOLD_LIMIT = 0.0106  # 个股持仓限制
+OTHER_LIMIT = 1.08  # 其他指标限制
+STK_BUY_R = 0.0072  # 个股买入比例
+TURN_MAX = 0.09  # 个股最大买入比例
+MEM_HOLD = 0.0  # 成员股持仓限制
 
 # constraint parameters (trade_support5_optimal_params)
-# INITIAL_MONEY = 200000000.0  # 初始资金
-# CITIC_LIMIT = 0.9335257864959601  # 行业限制 (范围0-2)
-# CMVG_LIMIT = 1.7198808134726415  # 市值限制 (范围0-2)
-# STK_HOLD_LIMIT = 0.02  # 个股持仓限制 (范围0-0.02)
-# OTHER_LIMIT = 0.9009985039390862  # 其他指标限制 (范围0-2)
-# STK_BUY_R = 0.001  # 个股买入比例 (范围0.001-0.02)
-# TURN_MAX = 0.03  # 个股最大买入比例 (范围0.03-0.2)
-# MEM_HOLD = 0.1884403511369706  # 成员股持仓限制 (范围0-0.4)
-
-# constraint parameters (trade_support7_params)
-INITIAL_MONEY = 200000000.0  # 初始资金
-CITIC_LIMIT = 0.06  # 行业限制 (范围0-0.5)
-CMVG_LIMIT = 0.2  # 市值限制 (范围0-0.5)
-STK_HOLD_LIMIT = 0.0106  # 个股持仓限制 (范围0-0.02)
-OTHER_LIMIT = 1.08  # 其他指标限制 (范围0-0.5)
-STK_BUY_R = 0.0072  # 个股买入比例 (范围0.001-0.02)
-TURN_MAX = 0.09  # 个股最大买入比例 (范围0.03-0.2)
-MEM_HOLD = 0.0  # 成员股持仓限制 (范围0-0.4)
+CITIC_LIMIT = 0.09522923178628084  # 行业限制 (范围0-2)
+CMVG_LIMIT = 1.4773003074308027  # 市值限制 (范围0-2)
+STK_HOLD_LIMIT = 0.005572496051203135  # 个股持仓限制 (范围0-0.02)
+OTHER_LIMIT = 0.18291207860261288  # 其他指标限制 (范围0-2)
+STK_BUY_R = 0.009569219620263202  # 个股买入比例 (范围0.001-0.02)
+TURN_MAX = 0.09379183056054619  # 个股最大买入比例 (范围0.03-0.2)
+MEM_HOLD = 0.38996638586551474  # 成员股持仓限制 (范围0-0.4)
 
 # constraint parameters (trade_support7_optimal_params)
-# INITIAL_MONEY = 200000000.0  # 初始资金
-# CITIC_LIMIT = 0.9335257864959601  # 行业限制 (范围0-2)
-# CMVG_LIMIT = 1.7198808134726415  # 市值限制 (范围0-2)
-# STK_HOLD_LIMIT = 0.02  # 个股持仓限制 (范围0-0.02)
-# OTHER_LIMIT = 0.9009985039390862  # 其他指标限制 (范围0-2)
-# STK_BUY_R = 0.001  # 个股买入比例 (范围0.001-0.02)
-# TURN_MAX = 0.03  # 个股最大买入比例 (范围0.03-0.2)
-# MEM_HOLD = 0.1884403511369706  # 成员股持仓限制 (范围0-0.4)
+# CITIC_LIMIT = 0.0  # 行业限制 (范围0-0.5)
+# CMVG_LIMIT = 0.5  # 市值限制 (范围0-0.5)
+# STK_HOLD_LIMIT = 0.0093646643386971  # 个股持仓限制 (范围0-0.02)
+# OTHER_LIMIT = 0.5  # 其他指标限制 (范围0-0.5)
+# STK_BUY_R = 0.02  # 个股买入比例 (范围0.001-0.02)
+# TURN_MAX = 0.06371569969647878  # 个股最大买入比例 (范围0.03-0.2)
+# MEM_HOLD = 0.0  # 成员股持仓限制 (范围0-0.4)

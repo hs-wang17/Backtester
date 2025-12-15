@@ -4,28 +4,27 @@ from optimizer import HyperparameterOptimizer
 import config as config
 from backtest import run_backtest
 
-# create param manager
-param_manager = ParamManager()
-
-
-def create_backtest_wrapper():
-    """create a backtest function wrapper that updates config with current params and runs backtest"""
-
-    def wrapper():
-        # get current params
-        params = param_manager.get_param_dict()
-        # update config
-        for key, value in params.items():
-            if hasattr(config, key):
-                setattr(config, key, value)
-        # run backtest
-        result = run_backtest()
-        return result
-
-    return wrapper
-
 
 def main():
+    # create param manager
+    param_manager = ParamManager()
+
+    def create_backtest_wrapper():
+        """create a backtest function wrapper that updates config with current params and runs backtest"""
+
+        def wrapper():
+            # get current params
+            params = param_manager.get_param_dict()
+            # update config
+            for key, value in params.items():
+                if hasattr(config, key):
+                    setattr(config, key, value)
+            # run backtest
+            result = run_backtest()
+            return result
+
+        return wrapper
+
     print("=" * 60)
     print("超参数优化系统")
     print("=" * 60)
