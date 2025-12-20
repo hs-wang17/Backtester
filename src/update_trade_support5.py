@@ -5,11 +5,11 @@ from tqdm import tqdm
 import datetime
 
 # ==================== 路径配置 ====================
-save_path = r"/home/user0/project/backtester/data/trade_support5"  # 每日特征输出路径
-path_dailyData = r"/home/user0/data/data_frames"  # 日频基础数据
-idx_weight_path = r"/home/user0/data/IndexWeightData"  # 指数权重文件
-min_path = r"/home/user0/data/min_data"  # 分钟线数据
-backtest_path = r"/home/user0/project/backtester/data"  # VWAP输出路径
+save_path = r"/home/haris/project/backtester/data/trade_support5"  # 每日特征输出路径
+path_dailyData = r"/home/haris/data/data_frames"  # 日频基础数据
+idx_weight_path = r"/home/haris/data/IndexWeightData"  # 指数权重文件
+min_path = r"/home/haris/data/min_data"  # 分钟线数据
+backtest_path = r"/home/haris/project/backtester/data"  # VWAP输出路径
 
 
 def load_daily_data(name):
@@ -111,6 +111,7 @@ style_ret_df = pd.DataFrame(sty_ret_dict).T
 cmvg_ret_df = pd.DataFrame(mvg_ret_dict).T
 
 # ==================== 生成每日特征文件 ====================
+os.makedirs(save_path, exist_ok=True)
 os.chdir(save_path)
 exist_files = os.listdir()
 
@@ -171,7 +172,7 @@ for date in tqdm(date_list[150:], desc="生成每日特征文件"):  # 前150天
     # 保存
     os.chdir(save_path)
     feat.fillna(0).to_feather(f"{date}.fea")
-    feat.fillna(0).to_feather(f"/home/user0/share/haris/backtester/data/trade_support5/{date}.fea")
+    feat.fillna(0).to_feather(f"/home/haris/share/haris/backtester/data/trade_support5/{date}.fea")
 
 
 # ==================== 计算早盘30分钟VWAP ====================
@@ -189,6 +190,6 @@ for f in tqdm(files, desc="计算早盘30分钟VWAP"):
 vwap_df = pd.DataFrame(vwap_dict).T.sort_index()
 os.chdir(backtest_path)
 vwap_df.to_feather("vwap.fea")
-vwap_df.to_feather("/home/user0/share/haris/backtester/data/vwap.fea")
+vwap_df.to_feather("/home/haris/share/haris/backtester/data/vwap.fea")
 
 print("Done:", datetime.datetime.now())

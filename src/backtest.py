@@ -8,6 +8,7 @@ from src.portfolio_optimizer import solve_problem
 from src.account import account
 from src.analysis import analyse
 from src.plot import plot
+import json
 
 
 def load_daily_data(name):
@@ -200,10 +201,14 @@ def run_backtest():
         td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
         td_hold_num = len(hold_weight)
         td_turnover = (buy_s[date] + sell_s[date]) / act_s[date] * 0.5
+        hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
+        amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
+
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
         td_diff["idx_hold"] = td_MEM_HOLD
         td_diff["hold_num"] = td_hold_num
         td_diff["turnover"] = td_turnover
+        td_diff["amt_weighted_rank"] = amt_weighted_rank
         hold_style_dict[date] = td_diff
 
     # aggregate results
@@ -211,17 +216,48 @@ def run_backtest():
     nv = pd.concat([zs_day.reindex(total_s.index), total_s["total_act"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
     hold_style = pd.DataFrame(hold_style_dict).T
-
-    # combine all daily hold_df into a single DataFrame with date information
-    all_hold_df = pd.DataFrame()
-    for date, daily_hold_df in hold_df_dict.items():
-        daily_hold_df_copy = daily_hold_df.copy()
-        daily_hold_df_copy["date"] = date
-        all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
-
-    all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
-
     info, nv_df, rel_nv = analyse(nv)
-    plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
-    return {"total_act_s": total_s, "nv": nv, "info": info, "hold_style": hold_style}
+    if config.PLOT:
+        # combine all daily hold_df into a single DataFrame with date information
+        all_hold_df = pd.DataFrame()
+        for date, daily_hold_df in hold_df_dict.items():
+            daily_hold_df_copy = daily_hold_df.copy()
+            daily_hold_df_copy["date"] = date
+            all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
+
+        all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
+        plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
+
+    else:
+        json_path = f"/home/haris/results/backtests/{config.STRATEGY_NAME}_trade_support{config.TRADE_SUPPORT}_all_ef_results.json"
+
+        new_entry = {
+            "parameters": {
+                "CITIC_LIMIT": config.CITIC_LIMIT,
+                "CMVG_LIMIT": config.CMVG_LIMIT,
+                "STK_HOLD_LIMIT": config.STK_HOLD_LIMIT,
+                "OTHER_LIMIT": config.OTHER_LIMIT,
+                "STK_BUY_R": config.STK_BUY_R,
+                "TURN_MAX": config.TURN_MAX,
+                "MEM_HOLD": config.MEM_HOLD,
+            },
+            "backtest_info": [info.to_dict()],
+        }
+
+        if os.path.exists(json_path):
+            with open(json_path, "r", encoding="utf-8") as f:
+                try:
+                    all_data = json.load(f)
+                    if not isinstance(all_data, list):
+                        all_data = [all_data]
+                except json.JSONDecodeError:
+                    all_data = []
+        else:
+            all_data = []
+
+        all_data.append(new_entry)
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(all_data, f, indent=4, ensure_ascii=False)
+
+        print(f"本次回测已追加至统一文件，当前总记录数: {len(all_data)}")

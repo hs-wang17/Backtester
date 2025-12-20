@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # 代码路径与run.py同级
-# load_target_weights函数的weights_dir参数需要根据实际情况修改(/home/user0/share/van/stf_stk_hold)
-# trade_dates是已经统计好的交易日(因为上一个目录中的交易日不全，需要fill)，放在(/home/user0/share/haris/trade_date.fea)
+# load_target_weights函数的weights_dir参数需要根据实际情况修改(/home/haris/share/van/stf_stk_hold)
+# trade_dates是已经统计好的交易日(因为上一个目录中的交易日不全，需要fill)，放在(/home/haris/share/haris/trade_date.fea)
 # 其他路径与config.py相同
 
 from tqdm import tqdm
@@ -15,7 +15,7 @@ from src.analysis import analyse
 from src.plot import plot
 
 
-def load_target_weights(date, weights_dir="/home/user0/temp/Vanmine_20251120"):
+def load_target_weights(date, weights_dir="/home/haris/temp/Vanmine_20251120"):
     """
     加载指定日期的目标权重文件
 
@@ -87,7 +87,7 @@ def run_backtest_with_weights():
     # 记录上一个交易日的权重，用于判断是否需要调仓
     last_target_weights = None
 
-    trade_dates = pd.read_feather("/home/user0/mydata/trade_date.fea")
+    trade_dates = pd.read_feather("/home/haris/mydata/trade_date.fea")
     date_list = [x[0] for x in trade_dates.values.tolist() if x[0] >= "20241011" and x[0] <= "20251013"]
 
     for date in tqdm(date_list, desc="Backtesting with weights"):

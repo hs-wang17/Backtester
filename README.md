@@ -96,9 +96,10 @@ python run.py --scores_path "SCORES_PATH.csv"
 或者
 
 ```bash
-screen -dmS backtester bash -c 'bash /home/user0/project/backtester/scripts/run.sh > /home/user0/logs/backtest_20251202.log 2>&1'
-screen -dmS backtester bash -c 'bash /home/user0/project/backtester/scripts/run_para_optimizer_gp.sh > /home/user0/logs/backtest_para_opt_20251202.log 2>&1'
-screen -dmS backtester bash -c 'bash /home/user0/project/backtester/scripts/run_para_optimizer_co.sh > /home/user0/logs/backtest_para_opt_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run.sh > /home/haris/logs/backtest_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp7.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_co.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_ef.sh > /home/haris/logs/backtest_para_ef_20251220.log 2>&1'
 ```
 
 - 回测完成后，会生成以下结果文件：

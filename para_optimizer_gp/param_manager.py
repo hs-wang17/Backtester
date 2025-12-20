@@ -22,8 +22,10 @@ class HyperParams:
 class ParamManager:
     """hyperparameter manager for portfolio optimization"""
 
-    def __init__(self, param_file=os.path.join(config.BASE_DIR, f"results/optimal_params_trade_support{config.TRADE_SUPPORT}.json")):
-        self.param_file = param_file
+    def __init__(self, param_file: str = None):
+        import config as config
+
+        self.param_file = os.path.join(config.BASE_DIR, f"results/optimal_params_trade_support{config.TRADE_SUPPORT}.json")
         self.params = HyperParams()
         self.eps = 1e-8
         if config.TRADE_SUPPORT == 5:

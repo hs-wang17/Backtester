@@ -36,7 +36,7 @@ def main():
 
     # optimize
     backtest_wrapper = create_backtest_wrapper()
-    optimizer = HyperparameterOptimizer(backtest_func=backtest_wrapper, param_manager=param_manager, n_calls=50, n_random_starts=10, random_state=42)
+    optimizer = HyperparameterOptimizer(backtest_func=backtest_wrapper, param_manager=param_manager, n_calls=1000, n_random_starts=100, random_state=42)
     result = optimizer.optimize()
     best_result = optimizer.get_best_result()
     print("\n" + "=" * 60)
@@ -52,11 +52,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--scores_path", type=str, required=True, help="Path to prediction scores CSV")
     parser.add_argument("--trade_support", type=int, required=True, help="Trade support type (5 or 7)")
+    parser.add_argument("--n_calls", type=int, default=1000, help="Number of calls to optimize (default: 1000)")
+    parser.add_argument("--n_random_starts", type=int, default=100, help="Number of random starts (default: 100)")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     config.update_from_args(args)
-    print(config.TRADE_SUPPORT)
     main()

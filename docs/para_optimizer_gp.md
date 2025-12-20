@@ -101,10 +101,10 @@ python run.py --scores_path /path/to/prediction_scores.csv
 #### (1) 数据路径配置
 
 ```python
-DATA_PATH = "/home/user0/project/backtester/data"                       # 基础数据路径
-DAILY_DATA_PATH = "/home/user0/data/data_frames"                        # 日线数据路径
-SUPPORT_PATH = "/home/user0/project/backtester/data/trade_support5"     # 支持数据路径
-SCORES_PATH = "/home/user0/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"     # 预测分数路径
+DATA_PATH = "/home/haris/project/backtester/data"                       # 基础数据路径
+DAILY_DATA_PATH = "/home/haris/data/data_frames"                        # 日线数据路径
+SUPPORT_PATH = "/home/haris/project/backtester/data/trade_support5"     # 支持数据路径
+SCORES_PATH = "/home/haris/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"     # 预测分数路径
 ```
 
 #### (2) 约束参数配置

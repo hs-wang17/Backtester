@@ -19,15 +19,13 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     if hold_style is None or not isinstance(hold_style, pd.DataFrame):
         raise ValueError("需要提供 hold_style DataFrame")
 
-    if config.TRADE_SUPPORT == 5:
-        cmvg_cols = [c for c in hold_style.columns if ("cmvg" in c) and ("." in c)]
-    else:
-        cmvg_cols = [c for c in hold_style.columns if "cmvg" in c]
+    cmvg_cols = [c for c in hold_style.columns if "cmvg" in c]
     style_cols = [c for c in hold_style.columns if "style" in c]
 
     hold_num_col = "hold_num"
     idx_hold_col = "idx_hold"
     turnover_col = "turnover"
+    amt_weighted_rank_col = "amt_weighted_rank"
 
     # ========== 准备净值数据 ==========
     plot_df = net_value_df.copy()
@@ -64,7 +62,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     ax_main = fig.add_subplot(gs[0, :])
     plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果")
     ax_main.set_xlabel("")
-    ax_main.legend(["策略净值", "指数净值", "超额净值"], loc="upper left", fontsize=12)
+    ax_main.legend(["策略净值", "指数净值", "超额净值"], loc="upper left", fontsize=14)
 
     # 右侧文本
     text_keys = ["策略回测指标"]
@@ -83,18 +81,18 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     y_pos = np.linspace(0.8, 0.2, len(text_keys))
     for y, k, v in zip(y_pos, text_keys, text_vals):
-        fig.text(1, y, k, fontsize=12, ha="left", family="WenQuanYi Micro Hei")
-        fig.text(1.2, y, v, fontsize=12, ha="right", family="WenQuanYi Micro Hei")
+        fig.text(1, y, k, fontsize=16, ha="left", family="WenQuanYi Micro Hei")
+        fig.text(1.2, y, v, fontsize=16, ha="right", family="WenQuanYi Micro Hei")
 
     ax_cmvg = fig.add_subplot(gs[1, 0])
-
     hold_style[cmvg_cols].plot(ax=ax_cmvg, grid=True, legend=True)
     ax_cmvg.set_title("市值偏离")
     ax_cmvg.tick_params(axis="x", labelrotation=30)
 
     ax_holdnum = fig.add_subplot(gs[1, 1])
-    hold_style[[hold_num_col]].plot(ax=ax_holdnum, grid=True, legend=True)
-    ax_holdnum.set_title("持股数量")
+    mix_cols = [c for c in [hold_num_col, amt_weighted_rank_col] if c in hold_style.columns]
+    hold_style[mix_cols].plot(ax=ax_holdnum, grid=True, legend=True)
+    ax_holdnum.set_title("持股数量 / 市值加权排名")
     ax_holdnum.tick_params(axis="x", labelrotation=30)
 
     ax_style = fig.add_subplot(gs[2, 0])
@@ -102,16 +100,16 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     ax_style.set_title("风格偏离")
     ax_style.tick_params(axis="x", labelrotation=30)
 
-    ax_mix = fig.add_subplot(gs[2, 1])
+    ax_turnover = fig.add_subplot(gs[2, 1])
     mix_cols = [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]
-    hold_style[mix_cols].plot(ax=ax_mix, grid=True, legend=True)
-    ax_mix.set_title("成分股占比 / 换手率")
-    ax_mix.tick_params(axis="x", labelrotation=30)
+    hold_style[mix_cols].plot(ax=ax_turnover, grid=True, legend=True)
+    ax_turnover.set_title("成分股占比 / 换手率")
+    ax_turnover.tick_params(axis="x", labelrotation=30)
 
     png_path = (
-        f"/home/user0/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
+        f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
         if strategy
-        else "/home/user0/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
+        else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
     )
     fig.savefig(png_path, format="png", bbox_inches="tight")
     plt.close(fig)
@@ -119,9 +117,9 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     # ========== Plotly: 使用 datetime x ==========
     html_path = (
-        f"/home/user0/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
+        f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
         if strategy
-        else "/home/user0/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
+        else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
     )
 
     legend_names = ["策略净值", "指数净值", "超额净值"]
@@ -131,7 +129,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         specs=[[{"type": "xy"}, {"type": "table"}], [{"type": "xy"}, {"type": "xy"}], [{"type": "xy"}, {"type": "xy"}]],
         column_widths=[0.65, 0.35],
         row_heights=[0.45, 0.275, 0.275],
-        subplot_titles=["净值曲线", "策略回测指标", "市值偏离", "持股数量", "风格偏离", "成分股占比 / 换手率"],
+        subplot_titles=["净值曲线", "策略回测指标", "市值偏离", "持股数量 / 市值加权排名", "风格偏离", "成分股占比 / 换手率"],
     )
 
     for col, legend_name in zip(plot_df.columns, legend_names):
@@ -163,10 +161,11 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     for col in cmvg_cols:
         fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=2, col=1)
-    fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[hold_num_col].values, mode="lines", name=hold_num_col, showlegend=True), row=2, col=2)
+    for col in [c for c in [hold_num_col, amt_weighted_rank_col] if c in hold_style.columns]:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=2, col=2)
     for col in style_cols:
         fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=1)
-    for col in mix_cols:
+    for col in [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]:
         fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=2)
 
     # 统一 x 轴范围（datetime）

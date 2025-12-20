@@ -177,6 +177,8 @@ class HyperparameterOptimizer:
             print(f"信息比率: {ir:.4f}, 超额收益: {ex_ret:.4f}, 超额波动: {ex_std:.4f}, 分数: {score:.4f}")
             print("-" * 50)
 
+            self.save_history()
+
             # return negative score for minimization
             return -score
 
@@ -226,9 +228,7 @@ class HyperparameterOptimizer:
 
     def save_history(self):
         """save optimization history to JSON file"""
-        history_file = os.path.join(
-            config.BASE_DIR, f"results/optimization_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}_trade_support{config.TRADE_SUPPORT}.json"
-        )
+        history_file = os.path.join(config.BASE_DIR, f"results/optimization_history_trade_support{config.TRADE_SUPPORT}.json")
         with open(history_file, "w", encoding="utf-8") as f:
             json.dump(self.history, f, indent=4, ensure_ascii=False)
         print(f"优化历史已保存到 {history_file}")

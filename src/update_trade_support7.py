@@ -5,9 +5,9 @@ from tqdm import tqdm
 import datetime
 
 # ==================== 路径配置 ====================
-save_path = r"/home/user0/project/backtester/data/trade_support7"  # 每日特征输出路径
-path_dailyData = r"/home/user0/data/data_frames"  # 日频基础数据
-idx_weight_path = r"/home/user0/data/IndexWeightData"  # 指数权重文件
+save_path = r"/home/haris/project/backtester/data/trade_support7"  # 每日特征输出路径
+path_dailyData = r"/home/haris/data/data_frames"  # 日频基础数据
+idx_weight_path = r"/home/haris/data/IndexWeightData"  # 指数权重文件
 
 
 def load_daily_data(name):
@@ -108,6 +108,7 @@ cmvg_ret_df = pd.DataFrame(mvg_ret_dict).T
 mkt_ret_s = pd.Series(mkt_ret_dict)
 
 # 更新数据
+os.makedirs(save_path, exist_ok=True)
 ok_list = os.listdir(save_path)
 for date in tqdm(date_list[150:]):
     dt_str = date

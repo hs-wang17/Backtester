@@ -3,15 +3,17 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # data paths
-DATA_PATH = r"/home/user0/project/backtester/data"
-TEST_RESULT_PATH = r"/home/user0/project/backtester/results"
-DAILY_DATA_PATH = r"/home/user0/data/data_frames"
-SUPPORT5_PATH = r"/home/user0/project/backtester/data/trade_support5"
-SUPPORT7_PATH = r"/home/user0/project/backtester/data/trade_support7"
-SCORES_PATH = r"/home/user0/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"
-HOLD_DF_PATH = r"/home/user0/results/backtests/"
+DATA_PATH = r"/home/haris/project/backtester/data"
+TEST_RESULT_PATH = r"/home/haris/project/backtester/results"
+DAILY_DATA_PATH = r"/home/haris/data/data_frames"
+SUPPORT5_PATH = r"/home/haris/project/backtester/data/trade_support5"
+SUPPORT7_PATH = r"/home/haris/project/backtester/data/trade_support7"
+SCORES_PATH = r"/home/haris/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"
+HOLD_DF_PATH = r"/home/haris/results/backtests/"
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
 TRADE_SUPPORT = 5
+N_CALLS = 1000
+N_RANDOM_STARTS = 100
 
 
 def update_from_args(args):
@@ -21,7 +23,12 @@ def update_from_args(args):
     if args.scores_path:
         SCORES_PATH = args.scores_path
         STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
+    if args.trade_support:
         TRADE_SUPPORT = args.trade_support
+    if args.n_calls:
+        N_CALLS = args.n_calls
+    if args.n_random_starts:
+        N_RANDOM_STARTS = args.n_random_starts
 
 
 # index settings

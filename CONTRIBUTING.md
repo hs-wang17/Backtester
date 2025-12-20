@@ -107,7 +107,7 @@ python run.py --scores_path /path/to/scores.csv
 3. 运行回测示例：
 
    ```bash
-   python run.py --scores_path "/home/user0/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"
+   python run.py --scores_path "/home/haris/results/predictions/StockPredictor_20251119_043804_combined_predictions.csv"
    ```
 4. 运行测试：
 
