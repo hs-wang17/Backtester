@@ -59,31 +59,13 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     fig = plt.figure(figsize=(18, 16))
     gs = fig.add_gridspec(3, 2, height_ratios=[3, 1.5, 1.5], wspace=0.25, hspace=0.35)
 
+    # 主图
     ax_main = fig.add_subplot(gs[0, :])
     plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果")
     ax_main.set_xlabel("")
     ax_main.legend(["策略净值", "指数净值", "超额净值"], loc="upper left", fontsize=14)
 
-    # 右侧文本
-    text_keys = ["策略回测指标"]
-    text_vals = [""]
-    for k, v in info.items():
-        text_keys.append(k)
-        if isinstance(v, (float, np.floating)):
-            if "天数" in k:
-                text_vals.append(int(v))
-            elif "收益" in k or "回撤" in k or "波动" in k:
-                text_vals.append(f"{v*100:7.2f}%")
-            else:
-                text_vals.append(f"{v:7.4f}")
-        else:
-            text_vals.append(str(v))
-
-    y_pos = np.linspace(0.8, 0.2, len(text_keys))
-    for y, k, v in zip(y_pos, text_keys, text_vals):
-        fig.text(1, y, k, fontsize=16, ha="left", family="WenQuanYi Micro Hei")
-        fig.text(1.2, y, v, fontsize=16, ha="right", family="WenQuanYi Micro Hei")
-
+    # 次图
     ax_cmvg = fig.add_subplot(gs[1, 0])
     hold_style[cmvg_cols].plot(ax=ax_cmvg, grid=True, legend=True)
     ax_cmvg.set_title("市值偏离")
@@ -106,6 +88,40 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     ax_turnover.set_title("成分股占比 / 换手率")
     ax_turnover.tick_params(axis="x", labelrotation=30)
 
+    # 文本
+    abs_keys = ["年化收益", "年化波动", "夏普比率", "累计收益", "最大回撤", "平均回撤", "胜率(天)"]
+    rel_keys = ["超额年化收益", "超额年化波动", "信息比率", "超额累计收益", "超额最大回撤", "超额平均回撤", "超额胜率(天)"]
+
+    abs_vals = [info[k] for k in abs_keys]
+    rel_vals = [info[k] for k in rel_keys]
+
+    n = len(abs_keys)
+    y_pos = np.linspace(0.8, 0.6, n)
+    fig.text(1.15, 0.85, "绝对指标", fontsize=18, ha="right", family="WenQuanYi Micro Hei")
+    fig.text(1.35, 0.85, "相对指标", fontsize=18, ha="right", family="WenQuanYi Micro Hei")
+
+    for y, ak, rk, av, rv in zip(y_pos, abs_keys, rel_keys, abs_vals, rel_vals):
+        fig.text(1, y, ak, fontsize=16, ha="left", family="WenQuanYi Micro Hei")
+        fig.text(1.15, y, f"{av*100:.2f}%" if "比率" not in ak else f"{av:.4f}", fontsize=16, ha="right", family="WenQuanYi Micro Hei")
+        fig.text(1.2, y, rk, fontsize=16, ha="left", family="WenQuanYi Micro Hei")
+        fig.text(1.35, y, f"{rv*100:.2f}%" if "比率" not in ak else f"{rv:.4f}", fontsize=16, ha="right", family="WenQuanYi Micro Hei")
+
+    annual_metrics = ["超额年化收益", "超额年化波动", "信息比率"]
+    years = sorted(info["逐年超额年化收益"].keys())
+    annual_dicts = [info["逐年超额年化收益"], info["逐年超额年化波动"], info["逐年信息比率"]]
+    row_height = 0.035  # 固定行距（可微调）
+    y_start = 0.45  # 第一行 y 位置
+    y_pos = [y_start - i * row_height for i in range(len(years))]
+    fig.text(1.02, 0.5, "年份", fontsize=18, ha="left", family="WenQuanYi Micro Hei")
+    for j, m in enumerate(annual_metrics):
+        fig.text(1.15 + 0.1 * j, 0.5, m, fontsize=18, ha="right", family="WenQuanYi Micro Hei")
+    for y, year in zip(y_pos, years):
+        fig.text(1.02, y, str(int(year)), fontsize=16, ha="left", family="WenQuanYi Micro Hei")
+        for j, (k, d) in enumerate(zip(annual_metrics, annual_dicts)):
+            v = d[year]
+            txt = f"{v:.4f}" if k == "信息比率" else f"{v*100:.2f}%"
+            fig.text(1.15 + 0.1 * j, y, txt, fontsize=16, ha="right", family="WenQuanYi Micro Hei")
+
     png_path = (
         f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
         if strategy
@@ -116,39 +132,52 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     print(f"PNG 已保存: {png_path}")
 
     # ========== Plotly: 使用 datetime x ==========
-    html_path = (
-        f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
-        if strategy
-        else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
-    )
-
-    legend_names = ["策略净值", "指数净值", "超额净值"]
     fig_plotly = make_subplots(
-        rows=3,
+        rows=4,
         cols=2,
-        specs=[[{"type": "xy"}, {"type": "table"}], [{"type": "xy"}, {"type": "xy"}], [{"type": "xy"}, {"type": "xy"}]],
+        specs=[
+            [{"type": "xy", "rowspan": 2}, {"type": "table"}],  # 净值 + 表1
+            [None, {"type": "table"}],  # 表2
+            [{"type": "xy"}, {"type": "xy"}],  # 市值 / 持股
+            [{"type": "xy"}, {"type": "xy"}],  # 风格 / 换手
+        ],
         column_widths=[0.65, 0.35],
-        row_heights=[0.45, 0.275, 0.275],
-        subplot_titles=["净值曲线", "策略回测指标", "市值偏离", "持股数量 / 市值加权排名", "风格偏离", "成分股占比 / 换手率"],
+        row_heights=[0.2, 0.2, 0.2, 0.2],
+        subplot_titles=["净值曲线", "绝对 / 相对指标", "分年度超额指标", "市值偏离", "持股数量 / 市值加权排名", "风格偏离", "成分股占比 / 换手率"],
     )
 
+    # 主图
+    legend_names = ["策略净值", "指数净值", "超额净值"]
     for col, legend_name in zip(plot_df.columns, legend_names):
         fig_plotly.add_trace(go.Scatter(x=plot_df_index_dt, y=plot_df[col].values, mode="lines", name=legend_name, showlegend=True), row=1, col=1)
 
-    # 指标表
-    headers = ["指标", "值"]
-    cells = [[], []]
-    for k, v in info.items():
-        cells[0].append(k)
-        if isinstance(v, (float, np.floating)):
-            if "天数" in k:
-                cells[1].append(int(v))
-            elif "收益" in k or "回撤" in k or "波动" in k:
-                cells[1].append(f"{v*100:.2f}%")
-            else:
-                cells[1].append(f"{v:.4f}")
-        else:
-            cells[1].append(str(v))
+    # 次图
+    for col in cmvg_cols:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=1)
+    for col in [c for c in [hold_num_col, amt_weighted_rank_col] if c in hold_style.columns]:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=2)
+    for col in style_cols:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=4, col=1)
+    for col in [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]:
+        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=4, col=2)
+
+    # 统一 x 轴范围（datetime）
+    fig_plotly.update_xaxes(range=x_range, row=1, col=1)
+    fig_plotly.update_xaxes(range=x_range, row=2, col=1)
+    fig_plotly.update_xaxes(range=x_range, row=2, col=2)
+    fig_plotly.update_xaxes(range=x_range, row=3, col=1)
+    fig_plotly.update_xaxes(range=x_range, row=3, col=2)
+    fig_plotly.update_yaxes(title_text="净值", row=1, col=1)
+    fig_plotly.update_layout(height=1300, width=1500, title=f"基于{strategy}的策略回测结果", legend=dict(traceorder="normal"))
+
+    # 指标表1
+    headers = ["", "绝对指标", "", "相对指标"]
+    cells = [
+        abs_keys,
+        [f"{v*100:.2f}%" if "比率" not in k else f"{v:.4f}" for k, v in zip(abs_keys, abs_vals)],
+        rel_keys,
+        [f"{v*100:.2f}%" if "比率" not in k else f"{v:.4f}" for k, v in zip(rel_keys, rel_vals)],
+    ]
 
     fig_plotly.add_trace(
         go.Table(
@@ -159,23 +188,29 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         col=2,
     )
 
-    for col in cmvg_cols:
-        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=2, col=1)
-    for col in [c for c in [hold_num_col, amt_weighted_rank_col] if c in hold_style.columns]:
-        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=2, col=2)
-    for col in style_cols:
-        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=1)
-    for col in [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]:
-        fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True), row=3, col=2)
+    # 指标表2
+    annual_headers = ["年份"] + ["超额年化收益", "超额年化波动", "信息比率"]
+    annual_cells = [
+        [[y] for y in years],
+        [f"{annual_dicts[0][y]*100:.2f}%" for y in years],  # 超额年化收益
+        [f"{annual_dicts[1][y]*100:.2f}%" for y in years],  # 超额年化波动
+        [f"{annual_dicts[2][y]:.4f}" for y in years],  # 信息比率
+    ]
 
-    # 统一 x 轴范围（datetime）
-    fig_plotly.update_xaxes(range=x_range, row=1, col=1)
-    fig_plotly.update_xaxes(range=x_range, row=2, col=1)
-    fig_plotly.update_xaxes(range=x_range, row=2, col=2)
-    fig_plotly.update_xaxes(range=x_range, row=3, col=1)
-    fig_plotly.update_xaxes(range=x_range, row=3, col=2)
-    fig_plotly.update_yaxes(title_text="净值", row=1, col=1)
-    fig_plotly.update_layout(height=1300, width=1500, title=f"基于{strategy}的策略回测结果", legend=dict(traceorder="normal"))
+    fig_plotly.add_trace(
+        go.Table(
+            header=dict(values=annual_headers, font=dict(family="WenQuanYi Micro Hei", size=12)),
+            cells=dict(values=annual_cells, font=dict(family="WenQuanYi Micro Hei", size=10)),
+        ),
+        row=2,
+        col=2,
+    )
+
+    html_path = (
+        f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
+        if strategy
+        else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
+    )
 
     pio.write_html(fig_plotly, file=html_path, auto_open=False)
     print(f"可交互 HTML 已保存: {html_path}")

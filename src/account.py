@@ -264,7 +264,7 @@ class account:
         """
         amt = self.hold_dict[code].buy(vol)
         self.log_trade(code, self.hold_dict[code].price, vol)
-        self.cash -= amt
+        self.cash -= amt  # TODO: add try and except
         return amt
 
     def sell_stk(self, code, vol):
@@ -342,7 +342,7 @@ class account:
             if code not in self.hold_dict:
                 continue
             st = self.hold_dict[code]
-            if st.low_price < st.price < st.up_price:
+            if st.low_price < st.price < st.up_price:  # TODO: remove the up_price for selling
                 left_sell = st.sellable_vol
                 if left_sell <= st.minimum_vol:
                     # when sellable volume is less than minimum volume, sell all
@@ -360,7 +360,7 @@ class account:
             if code not in self.hold_dict:
                 self.hold_dict[code] = stk(code, self.td_price_now[code], self.td_upper[code], self.td_lower[code])
             st = self.hold_dict[code]
-            if st.low_price < st.price < st.up_price:
+            if st.low_price < st.price < st.up_price:  # TODO: remove the low_price for buying
                 # calculate maximum volume to buy according to available funds and trading units
                 max_vol = int((cash_avail + total_sell - total_buy) / (st.price * st.unit_vol)) * st.unit_vol
                 # calculate the maximum volume to buy according to available funds and trading units

@@ -98,14 +98,20 @@ def run_backtest():
             last_hold = td_mem.reindex(code_list).fillna(0) * act  # pd.Series([0]*len(code_list),index=code_list)
         else:
             last_hold = hold_df["amt"].reindex(code_list).fillna(0) + s.cash * td_mem.reindex(code_list).fillna(0)
-            st_hold = hold_df["amt"].reindex([x for x in hold_df.index if (x not in code_list)])  #
+            st_hold = hold_df["amt"].reindex([x for x in hold_df.index if (x not in code_list)])
 
         try:
             # first trial
             tgt_hold = solve_problem(
                 code_list=code_list,
                 x_last=last_hold,
-                score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
+                # TODO: try different score normalization methods (e.g., rank)
+                score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),  # Min-Max
+                # score=td_score.rank(),  # Rank
+                # score=(td_score - td_score.mean()) / (td_score.std() + 1e-8),  # Z-score
+                # score=(td_score - td_score.median()) / ((td_score - td_score.median()).abs().median() + 1e-8),  # Robust Z-score
+                # score=((td_score - td_score.mean()) / td_score.std()).clip(-3, 3),  # Truncated Z-score
+                # score=td_score.rank(pct=True) - 0.5,  # Normalized Rank
                 stk_low=((td_mem - stk_perm).clip(0) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * act),
                 stk_high=((td_mem + stk_perm) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * act),
                 tot_amt=1.01 * act,
@@ -122,6 +128,7 @@ def run_backtest():
                 style_up=((zz_style + config.OTHER_LIMIT) * act),
                 style_down=((zz_style - config.OTHER_LIMIT) * act),
                 solver="SCIPY",
+                method=config.SOLVER_METHOD,
             )
 
             if len(round(tgt_hold).replace(0, np.nan).dropna()) == 0:
@@ -138,7 +145,12 @@ def run_backtest():
                 tgt_hold = solve_problem(
                     code_list=code_list,
                     x_last=last_hold,
-                    score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
+                    score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),  # Min-Max
+                    # score=td_score.rank(),  # Rank
+                    # score=(td_score - td_score.mean()) / (td_score.std() + 1e-8),  # Z-score
+                    # score=(td_score - td_score.median()) / ((td_score - td_score.median()).abs().median() + 1e-8),  # Robust Z-score
+                    # score=((td_score - td_score.mean()) / td_score.std()).clip(-3, 3),  # Truncated Z-score
+                    # score=td_score.rank(pct=True) - 0.5,  # Normalized Rank
                     stk_low=((td_mem - stk_perm).clip(0) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 4 * config.STK_BUY_R * act),
                     stk_high=((td_mem + stk_perm) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 4 * config.STK_BUY_R * act),
                     tot_amt=1.01 * act,
@@ -155,6 +167,7 @@ def run_backtest():
                     style_up=((zz_style + config.OTHER_LIMIT) * act),
                     style_down=((zz_style - config.OTHER_LIMIT) * act),
                     solver="SCIPY",
+                    method=config.SOLVER_METHOD,
                 )
 
                 if len(round(tgt_hold).replace(0, np.nan).dropna()) == 0:
@@ -216,7 +229,7 @@ def run_backtest():
     nv = pd.concat([zs_day.reindex(total_s.index), total_s["total_act"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
     hold_style = pd.DataFrame(hold_style_dict).T
-    info, nv_df, rel_nv = analyse(nv)
+    info, nv, rel_nv = analyse(nv)
 
     if config.PLOT:
         # combine all daily hold_df into a single DataFrame with date information
@@ -227,7 +240,7 @@ def run_backtest():
             all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
 
         all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
-        plot(nv_df, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
+        plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     else:
         json_path = f"/home/haris/results/backtests/{config.STRATEGY_NAME}_trade_support{config.TRADE_SUPPORT}_all_ef_results.json"

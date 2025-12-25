@@ -12,6 +12,7 @@ SCORES_PATH = r"/home/haris/results/predictions/StockPredictor_20251119_043804_c
 HOLD_DF_PATH = r"/home/haris/results/backtests/"
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
 PLOT = True
+SOLVER_METHOD = "basic"
 
 # index settings
 IDX_NAME = "zz1000"
@@ -42,7 +43,7 @@ def update_from_args(args):
     """Update configuration from command line arguments."""
     global SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
     global CITIC_LIMIT, CMVG_LIMIT, STK_HOLD_LIMIT, OTHER_LIMIT, STK_BUY_R, TURN_MAX, MEM_HOLD
-    global PLOT
+    global PLOT, SOLVER_METHOD
 
     if args.scores_path:
         SCORES_PATH = args.scores_path
@@ -58,7 +59,7 @@ def update_from_args(args):
             TURN_MAX = 0.09379183056054619  # 个股最大买入比例 (范围0.03-0.2)
             MEM_HOLD = 0.38996638586551474  # 成员股持仓限制 (范围0-0.4)
 
-        else:
+        elif TRADE_SUPPORT == 7:
             CITIC_LIMIT = 0.0  # 行业限制 (范围0-0.5)
             CMVG_LIMIT = 0.5  # 市值限制 (范围0-0.5)
             STK_HOLD_LIMIT = 0.0093646643386971  # 个股持仓限制 (范围0-0.02)
@@ -84,3 +85,5 @@ def update_from_args(args):
 
     if not args.plot:
         PLOT = False
+    if args.solver_method:
+        SOLVER_METHOD = args.solver_method

@@ -3,7 +3,7 @@ import subprocess
 import os
 
 # 配置文件路径
-JSON_PATH = "/home/haris/project/backtester/para_optimizer_ef/diverse_efficient_parameters.json"
+JSON_PATH = "/home/haris/project/backtester/para_optimizer_ef/diverse_efficient_parameters_ratio_score.json"
 PYTHON_EXE = "/home/haris/miniconda3/envs/myenv/bin/python"
 RUN_SCRIPT = "/home/haris/project/backtester/run.py"
 SCORES_PATH = "/home/haris/results/predictions/model_re_20251128.csv"
