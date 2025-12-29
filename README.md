@@ -97,6 +97,7 @@ python run.py --scores_path "SCORES_PATH.csv"
 
 ```bash
 screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run.sh > /home/haris/logs/backtest_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp5.sh > /home/haris/logs/backtest_para_opt_20251226.log 2>&1'
 screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp7.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
 screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_co.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
 screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_ef.sh > /home/haris/logs/backtest_para_ef_20251220.log 2>&1'

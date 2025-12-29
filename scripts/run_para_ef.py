@@ -1,23 +1,26 @@
 import json
 import subprocess
 import os
+import argparse
 
-# 配置文件路径
-JSON_PATH = "/home/haris/project/backtester/para_optimizer_ef/diverse_efficient_parameters_ratio_score.json"
+
 PYTHON_EXE = "/home/haris/miniconda3/envs/myenv/bin/python"
 RUN_SCRIPT = "/home/haris/project/backtester/run.py"
 SCORES_PATH = "/home/haris/results/predictions/model_re_20251128.csv"
 
 
-def run_backtests():
-    if not os.path.exists(JSON_PATH):
-        print(f"错误: 找不到文件 {JSON_PATH}")
+def run_backtests(json_path):
+    if not os.path.exists(json_path):
+        print(f"错误: 找不到文件 {json_path}")
         return
 
-    with open(JSON_PATH, "r") as f:
+    with open(json_path, "r") as f:
         param_list = json.load(f)
 
+    print(f"参数文件: {json_path}")
     print(f"找到 {len(param_list)} 组参数，开始执行...")
+
+    para_name = os.path.splitext(os.path.basename(json_path))[0]
 
     for i, params in enumerate(param_list):
         cmd = [
@@ -43,14 +46,25 @@ def run_backtests():
             str(params["param_memory_hold"]),
             "--plot",
             "False",
+            "--para_name",
+            para_name,
         ]
 
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
-            print(f"\n[错误] 第 {i+1} 组参数执行失败: {e}")
+            print(f"\n[错误] 第 {i + 1} 组参数执行失败: {e}")
             continue
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="批量回测参数执行脚本")
+    parser.add_argument("--json_path", required=True, help="参数 JSON 文件路径")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    run_backtests()
+    args = parse_args()
+    run_backtests(args.json_path)
+
+    print("所有参数执行完成")

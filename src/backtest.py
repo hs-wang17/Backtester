@@ -88,45 +88,39 @@ def run_backtest():
 
         # refresh before market open
         act = s.refresh_open(td_upper, td_lower, td_preclose.to_dict(), td_adj)
-        stk_buy_amt = pd.Series([config.STK_BUY_R * act] * len(code_list), index=code_list)
+        stk_buy_weight = pd.Series([config.STK_BUY_R] * len(code_list), index=code_list)
         for code in zt_codes:
             if code in code_list:
-                stk_buy_amt[code] = 0
+                stk_buy_weight[code] = 0
 
         # get last holding
         if len(s.hold_dict) == 0:
-            last_hold = td_mem.reindex(code_list).fillna(0) * act  # pd.Series([0]*len(code_list),index=code_list)
+            last_hold = td_mem.reindex(code_list).fillna(0)
         else:
-            last_hold = hold_df["amt"].reindex(code_list).fillna(0) + s.cash * td_mem.reindex(code_list).fillna(0)
+            last_hold = (hold_df["amt"].reindex(code_list).fillna(0) + s.cash * td_mem.reindex(code_list).fillna(0)) / act
             st_hold = hold_df["amt"].reindex([x for x in hold_df.index if (x not in code_list)])
 
         try:
             # first trial
-            tgt_hold = solve_problem(
+            tgt_hold = act * solve_problem(
                 code_list=code_list,
                 x_last=last_hold,
-                # TODO: try different score normalization methods (e.g., rank)
-                score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),  # Min-Max
-                # score=td_score.rank(),  # Rank
-                # score=(td_score - td_score.mean()) / (td_score.std() + 1e-8),  # Z-score
-                # score=(td_score - td_score.median()) / ((td_score - td_score.median()).abs().median() + 1e-8),  # Robust Z-score
-                # score=((td_score - td_score.mean()) / td_score.std()).clip(-3, 3),  # Truncated Z-score
-                # score=td_score.rank(pct=True) - 0.5,  # Normalized Rank
-                stk_low=((td_mem - stk_perm).clip(0) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * act),
-                stk_high=((td_mem + stk_perm) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * act),
-                tot_amt=1.01 * act,
-                sell_max=act * config.TURN_MAX,
+                score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
+                stk_low=(td_mem - stk_perm).clip(0).clip(upper=last_hold + stk_buy_weight, lower=last_hold - 2 * config.STK_BUY_R),
+                stk_high=(td_mem + stk_perm).clip(upper=last_hold + stk_buy_weight, lower=last_hold - 2 * config.STK_BUY_R),
+                tot_weight=1.01,
+                sell_max=config.TURN_MAX,
                 td_mem=(td_mem > 0).astype(int),
-                td_mem_amt=config.MEM_HOLD * act,
+                td_mem_weight=config.MEM_HOLD,
                 td_ind=td_citic,
-                td_ind_up=((zz_citic + config.CITIC_LIMIT) * act),
-                td_ind_down=((zz_citic - config.CITIC_LIMIT) * act),
+                td_ind_up=(zz_citic + config.CITIC_LIMIT),
+                td_ind_down=(zz_citic - config.CITIC_LIMIT),
                 td_cmvg=td_cmvg,
-                td_cmvg_up=((zz_cmvg + config.CMVG_LIMIT) * act),
-                td_cmvg_down=((zz_cmvg - config.CMVG_LIMIT) * act),
+                td_cmvg_up=(zz_cmvg + config.CMVG_LIMIT),
+                td_cmvg_down=(zz_cmvg - config.CMVG_LIMIT),
                 td_style=style_fac,
-                style_up=((zz_style + config.OTHER_LIMIT) * act),
-                style_down=((zz_style - config.OTHER_LIMIT) * act),
+                style_up=(zz_style + config.OTHER_LIMIT),
+                style_down=(zz_style - config.OTHER_LIMIT),
                 solver="SCIPY",
                 method=config.SOLVER_METHOD,
             )
@@ -137,35 +131,27 @@ def run_backtest():
         except Exception as e1:
             print("First trial failed:", e1)
 
-            # first fallback
-            tgt_hold = last_hold * (1 - config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * config.TURN_MAX * s.total_account
-
             # second trial
             try:
-                tgt_hold = solve_problem(
+                tgt_hold = act * solve_problem(
                     code_list=code_list,
                     x_last=last_hold,
-                    score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),  # Min-Max
-                    # score=td_score.rank(),  # Rank
-                    # score=(td_score - td_score.mean()) / (td_score.std() + 1e-8),  # Z-score
-                    # score=(td_score - td_score.median()) / ((td_score - td_score.median()).abs().median() + 1e-8),  # Robust Z-score
-                    # score=((td_score - td_score.mean()) / td_score.std()).clip(-3, 3),  # Truncated Z-score
-                    # score=td_score.rank(pct=True) - 0.5,  # Normalized Rank
-                    stk_low=((td_mem - stk_perm).clip(0) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 4 * config.STK_BUY_R * act),
-                    stk_high=((td_mem + stk_perm) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 4 * config.STK_BUY_R * act),
-                    tot_amt=1.01 * act,
-                    sell_max=2 * act * config.TURN_MAX,
+                    score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
+                    stk_low=(td_mem - stk_perm).clip(0).clip(upper=last_hold + 2 * stk_buy_weight, lower=last_hold - 4 * config.STK_BUY_R),
+                    stk_high=(td_mem + stk_perm).clip(upper=last_hold + 2 * stk_buy_weight, lower=last_hold - 4 * config.STK_BUY_R),
+                    tot_weight=1.01,
+                    sell_max=2 * config.TURN_MAX,
                     td_mem=(td_mem > 0).astype(int),
-                    td_mem_amt=config.MEM_HOLD * act,
+                    td_mem_weight=config.MEM_HOLD,
                     td_ind=td_citic,
-                    td_ind_up=((zz_citic + config.CITIC_LIMIT) * act),
-                    td_ind_down=((zz_citic - config.CITIC_LIMIT) * act),
+                    td_ind_up=(zz_citic + config.CITIC_LIMIT),
+                    td_ind_down=(zz_citic - config.CITIC_LIMIT),
                     td_cmvg=td_cmvg,
-                    td_cmvg_up=((zz_cmvg + config.CMVG_LIMIT) * act),
-                    td_cmvg_down=((zz_cmvg - config.CMVG_LIMIT) * act),
+                    td_cmvg_up=(zz_cmvg + config.CMVG_LIMIT),
+                    td_cmvg_down=(zz_cmvg - config.CMVG_LIMIT),
                     td_style=style_fac,
-                    style_up=((zz_style + config.OTHER_LIMIT) * act),
-                    style_down=((zz_style - config.OTHER_LIMIT) * act),
+                    style_up=(zz_style + config.OTHER_LIMIT),
+                    style_down=(zz_style - config.OTHER_LIMIT),
                     solver="SCIPY",
                     method=config.SOLVER_METHOD,
                 )
@@ -176,8 +162,8 @@ def run_backtest():
             except Exception as e2:
                 print("Second trial failed:", e2)
 
-                # second fallback
-                tgt_hold = last_hold * (1 - 2 * config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * 2 * config.TURN_MAX * s.total_account
+                # fallback
+                tgt_hold = last_hold * (1 - config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * config.TURN_MAX * s.total_account
 
         # get to buy and to sell series
         sort_index = td_score.sort_values(ascending=False).index
@@ -243,7 +229,7 @@ def run_backtest():
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     else:
-        json_path = f"/home/haris/results/backtests/{config.STRATEGY_NAME}_trade_support{config.TRADE_SUPPORT}_all_ef_results.json"
+        json_path = f"/home/haris/project/backtester/para_optimizer_ef/scores/{config.PARA_NAME}.json"
 
         new_entry = {
             "parameters": {

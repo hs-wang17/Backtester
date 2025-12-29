@@ -12,6 +12,7 @@ SCORES_PATH = r"/home/haris/results/predictions/StockPredictor_20251119_043804_c
 HOLD_DF_PATH = r"/home/haris/results/backtests/"
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
 PLOT = True
+PARA_NAME = None
 SOLVER_METHOD = "basic"
 
 # index settings
@@ -43,7 +44,7 @@ def update_from_args(args):
     """Update configuration from command line arguments."""
     global SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
     global CITIC_LIMIT, CMVG_LIMIT, STK_HOLD_LIMIT, OTHER_LIMIT, STK_BUY_R, TURN_MAX, MEM_HOLD
-    global PLOT, SOLVER_METHOD
+    global PLOT, PARA_NAME, SOLVER_METHOD
 
     if args.scores_path:
         SCORES_PATH = args.scores_path
@@ -85,5 +86,7 @@ def update_from_args(args):
 
     if not args.plot:
         PLOT = False
+    if args.para_name:
+        PARA_NAME = args.para_name
     if args.solver_method:
         SOLVER_METHOD = args.solver_method

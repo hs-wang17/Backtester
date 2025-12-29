@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--turn_max", type=float, default=None, help="Turn max")
     parser.add_argument("--mem_hold", type=float, default=None, help="Member hold limit")
     parser.add_argument("--plot", type=str2bool, default=True, help="Plot")
+    parser.add_argument("--para_name", type=str, default=None, help="Parameter name")
     parser.add_argument("--solver_method", type=str, default="basic", help="Solver method")
     return parser.parse_args()
 

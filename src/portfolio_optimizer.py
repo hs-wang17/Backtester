@@ -9,10 +9,10 @@ def solve_problem(
     score,
     stk_low,
     stk_high,
-    tot_amt,
+    tot_weight,
     sell_max,
     td_mem,
-    td_mem_amt,
+    td_mem_weight,
     td_ind,
     td_ind_up,
     td_ind_down,
@@ -33,21 +33,21 @@ def solve_problem(
     code_list : list
         List of stock codes
     x_last : pd.Series
-        Last day's holding amount
+        Last day's holding weight
     score : pd.Series
         Scores of each stock
     stk_low : pd.Series
-        Lower bound of each stock's holding amount
+        Lower bound of each stock's holding weight
     stk_high : pd.Series
-        Upper bound of each stock's holding amount
-    tot_amt : float
-        Total amount of money available
+        Upper bound of each stock's holding weight
+    tot_weight : float
+        Total weight of money available
     sell_max : float
-        Maximum amount of money available for selling each day
+        Maximum weight of money available for selling each day
     td_mem : pd.Series
         Memory of each stock
-    td_mem_amt : float
-        Amount of memory for each stock
+    td_mem_weight : float
+        Weight of memory for each stock
     td_ind : pd.Series
         Industry of each stock
     td_ind_up : pd.Series
@@ -72,7 +72,7 @@ def solve_problem(
     Returns
     -------
     pd.Series
-        The optimized holding amount of each stock
+        The optimized holding weight of each stock
     """
 
     def make_param(s, fill=0):
@@ -103,10 +103,10 @@ def solve_problem(
             x <= make_param(stk_high),
             # selling constraints
             cp.sum(cp.abs(x - x_last) - x + x_last) <= 2 * sell_max,
-            # total amount constraints
-            cp.sum(x) <= tot_amt,
+            # total weight constraints
+            cp.sum(x) <= tot_weight,
             # membership constraints
-            x @ make_param(td_mem) >= td_mem_amt,
+            x @ make_param(td_mem) >= td_mem_weight,
             # industry constraints
             x @ make_param(td_ind) <= td_ind_up.values,
             x @ make_param(td_ind) >= td_ind_down.values,
@@ -145,9 +145,9 @@ def solve_problem(
         hard_constraints = [
             x >= make_param(stk_low),
             x <= make_param(stk_high),
-            cp.sum(x) <= tot_amt,
+            cp.sum(x) <= tot_weight,
             cp.sum(cp.abs(x - x_last) - x + x_last) <= 2 * sell_max,
-            x @ make_param(td_mem) >= td_mem_amt,
+            x @ make_param(td_mem) >= td_mem_weight,
         ]
 
         # 3.2 弹性约束 (允许通过松弛变量违背)
