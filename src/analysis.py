@@ -30,7 +30,7 @@ def analyse(net_value):
     rel_mean_ret = rel_ret.mean() * 250
     rel_std_ret = rel_ret.std() * np.sqrt(250)
     rel_sharpe = rel_mean_ret / rel_std_ret if rel_std_ret > 0 else np.nan  # 信息比率
-    rel_cum_ret = 1 + rel_ret.cumsum()
+    rel_cum_ret = rel_ret.cumsum()
     rel_dd = rel_cum_ret.cummax() - rel_cum_ret
     rel_max_dd = rel_dd.max()
     rel_mean_dd = rel_dd[rel_dd > 0].mean()
@@ -72,6 +72,6 @@ def analyse(net_value):
     )
 
     net_value = pd.concat([net_value["strategy"], net_value["zs"]], axis=1)
-    relative_net_value = rel_cum_ret
+    relative_net_value = 1 + rel_cum_ret
 
     return info, net_value, relative_net_value

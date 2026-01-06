@@ -23,8 +23,11 @@ if IDX_NAME == "zz1000":
 elif IDX_NAME == "zz500":
     IDX_NAME_CN = "中证500"
     FUTURE_BASIS = 0.04
-else:
+elif IDX_NAME == "hs300":
     IDX_NAME_CN = "沪深300"
+    FUTURE_BASIS = 0.0
+elif IDX_NAME == "A500":
+    IDX_NAME_CN = "中证A500"
     FUTURE_BASIS = 0.0
 
 TRADE_SUPPORT = 5

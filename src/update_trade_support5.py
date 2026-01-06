@@ -17,6 +17,24 @@ def load_daily_data(name):
     return pd.read_feather(os.path.join(path_dailyData, f"{name}.feather"))
 
 
+# ==================== 计算早盘30分钟VWAP ====================
+os.chdir(min_path)
+files = os.listdir()
+vwap_dict = {}
+
+for f in tqdm(files, desc="计算早盘30分钟VWAP"):
+    data = pd.read_feather(f)
+    vol = data.pivot(index="time", columns="code", values="volume")
+    amt = data.pivot(index="time", columns="code", values="amount")
+    # 前30分钟成交额/成交量 = VWAP
+    vwap_dict[f[:8]] = amt.iloc[:30].sum() / (vol.iloc[:30].sum().replace(0, np.nan))
+
+vwap_df = pd.DataFrame(vwap_dict).T.sort_index()
+os.chdir(backtest_path)
+vwap_df.to_feather("vwap.fea")
+# vwap_df.to_feather("/home/haris/share/haris/backtester/data/vwap.fea")
+
+
 # ==================== 基础数据准备 ====================
 citic1 = load_daily_data("stk_citic1_name").ffill()  # 中信一级行业分类
 date_list = citic1.index.tolist()  # 所有交易日列表
@@ -116,8 +134,8 @@ os.chdir(save_path)
 exist_files = os.listdir()
 
 for date in tqdm(date_list[150:], desc="生成每日特征文件"):  # 前150天用于60日回归窗口
-    if f"{date}.fea" in exist_files:
-        continue
+    # if f"{date}.fea" in exist_files:
+    #     continue
 
     # 过去60日数据
     sub_ind = ind_ret_df.loc[:date].iloc[-60:]  # 行业超额
@@ -162,7 +180,7 @@ for date in tqdm(date_list[150:], desc="生成每日特征文件"):  # 前150天
     # 指数组合因子值 + 成份股权重
     os.chdir(idx_weight_path)
     w_data = pd.read_feather(f"{date}.fea")
-    for idx in ["zz500", "zz1000", "hs300"]:
+    for idx in ["zz500", "zz1000", "hs300", "A500"]:
         sub_w = w_data[w_data["index_name"] == idx.upper()].set_index("stock_code")
         weight = sub_w["stock_weight"].reindex(codes).fillna(0)
         weight /= weight.sum() or 1  # 防止除0
@@ -172,24 +190,6 @@ for date in tqdm(date_list[150:], desc="生成每日特征文件"):  # 前150天
     # 保存
     os.chdir(save_path)
     feat.fillna(0).to_feather(f"{date}.fea")
-    feat.fillna(0).to_feather(f"/home/haris/share/haris/backtester/data/trade_support5/{date}.fea")
-
-
-# ==================== 计算早盘30分钟VWAP ====================
-os.chdir(min_path)
-files = os.listdir()
-vwap_dict = {}
-
-for f in tqdm(files, desc="计算早盘30分钟VWAP"):
-    data = pd.read_feather(f)
-    vol = data.pivot(index="time", columns="code", values="volume")
-    amt = data.pivot(index="time", columns="code", values="amount")
-    # 前30分钟成交额/成交量 = VWAP
-    vwap_dict[f[:8]] = amt.iloc[:30].sum() / (vol.iloc[:30].sum().replace(0, np.nan))
-
-vwap_df = pd.DataFrame(vwap_dict).T.sort_index()
-os.chdir(backtest_path)
-vwap_df.to_feather("vwap.fea")
-vwap_df.to_feather("/home/haris/share/haris/backtester/data/vwap.fea")
+    # feat.fillna(0).to_feather(f"/home/haris/share/haris/backtester/data/trade_support5/{date}.fea")
 
 print("Done:", datetime.datetime.now())

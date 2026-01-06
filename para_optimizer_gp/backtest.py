@@ -2,13 +2,11 @@ import os
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
-import src.config as config
-from src.utils import get_daily_price, get_daily_support5, get_daily_support7
-from src.portfolio_optimizer import solve_problem
-from src.account import account
-from src.analysis import analyse
-from src.plot import plot
-import json
+import config as config
+from utils import get_daily_price, get_daily_support5, get_daily_support7
+from portfolio_optimizer import solve_problem
+from account import account
+from analysis import analyse
 
 
 def load_daily_data(name):
@@ -88,41 +86,40 @@ def run_backtest():
 
         # refresh before market open
         act = s.refresh_open(td_upper, td_lower, td_preclose.to_dict(), td_adj)
-        stk_buy_weight = pd.Series([config.STK_BUY_R] * len(code_list), index=code_list)
+        stk_buy_amt = pd.Series([config.STK_BUY_R * act] * len(code_list), index=code_list)
         for code in zt_codes:
             if code in code_list:
-                stk_buy_weight[code] = 0
+                stk_buy_amt[code] = 0
 
         # get last holding
         if len(s.hold_dict) == 0:
-            last_hold = td_mem.reindex(code_list).fillna(0)
+            last_hold = td_mem.reindex(code_list).fillna(0) * act  # pd.Series([0]*len(code_list),index=code_list)
         else:
-            last_hold = (hold_df["amt"].reindex(code_list).fillna(0) + s.cash * td_mem.reindex(code_list).fillna(0)) / act
-            st_hold = hold_df["amt"].reindex([x for x in hold_df.index if (x not in code_list)])
+            last_hold = hold_df["amt"].reindex(code_list).fillna(0) + s.cash * td_mem.reindex(code_list).fillna(0)
+            st_hold = hold_df["amt"].reindex([x for x in hold_df.index if (x not in code_list)])  #
 
         try:
             # first trial
-            tgt_hold = act * solve_problem(
+            tgt_hold = solve_problem(
                 code_list=code_list,
                 x_last=last_hold,
                 score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
-                stk_low=(td_mem - stk_perm).clip(0).clip(upper=last_hold + stk_buy_weight, lower=last_hold - 2 * config.STK_BUY_R),
-                stk_high=(td_mem + stk_perm).clip(upper=last_hold + stk_buy_weight, lower=last_hold - 2 * config.STK_BUY_R),
-                tot_weight=1.01,
-                sell_max=config.TURN_MAX,
+                stk_low=((td_mem - stk_perm).clip(0) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * act),
+                stk_high=((td_mem + stk_perm) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 2 * config.STK_BUY_R * act),
+                tot_amt=1.01 * act,
+                sell_max=act * config.TURN_MAX,
                 td_mem=(td_mem > 0).astype(int),
-                td_mem_weight=config.MEM_HOLD,
+                td_mem_amt=config.MEM_HOLD * act,
                 td_ind=td_citic,
-                td_ind_up=(zz_citic + config.CITIC_LIMIT),
-                td_ind_down=(zz_citic - config.CITIC_LIMIT),
+                td_ind_up=((zz_citic + config.CITIC_LIMIT) * act),
+                td_ind_down=((zz_citic - config.CITIC_LIMIT) * act),
                 td_cmvg=td_cmvg,
-                td_cmvg_up=(zz_cmvg + config.CMVG_LIMIT),
-                td_cmvg_down=(zz_cmvg - config.CMVG_LIMIT),
+                td_cmvg_up=((zz_cmvg + config.CMVG_LIMIT) * act),
+                td_cmvg_down=((zz_cmvg - config.CMVG_LIMIT) * act),
                 td_style=style_fac,
-                style_up=(zz_style + config.OTHER_LIMIT),
-                style_down=(zz_style - config.OTHER_LIMIT),
+                style_up=((zz_style + config.OTHER_LIMIT) * act),
+                style_down=((zz_style - config.OTHER_LIMIT) * act),
                 solver="SCIPY",
-                method=config.SOLVER_METHOD,
             )
 
             if len(round(tgt_hold).replace(0, np.nan).dropna()) == 0:
@@ -131,29 +128,31 @@ def run_backtest():
         except Exception as e1:
             print("First trial failed:", e1)
 
+            # first fallback
+            tgt_hold = last_hold * (1 - config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * config.TURN_MAX * s.total_account
+
             # second trial
             try:
-                tgt_hold = act * solve_problem(
+                tgt_hold = solve_problem(
                     code_list=code_list,
                     x_last=last_hold,
                     score=(td_score - td_score.min()) / (td_score.max() - td_score.min()),
-                    stk_low=(td_mem - stk_perm).clip(0).clip(upper=last_hold + 2 * stk_buy_weight, lower=last_hold - 4 * config.STK_BUY_R),
-                    stk_high=(td_mem + stk_perm).clip(upper=last_hold + 2 * stk_buy_weight, lower=last_hold - 4 * config.STK_BUY_R),
-                    tot_weight=1.01,
-                    sell_max=2 * config.TURN_MAX,
+                    stk_low=((td_mem - stk_perm).clip(0) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 4 * config.STK_BUY_R * act),
+                    stk_high=((td_mem + stk_perm) * act).clip(upper=last_hold + stk_buy_amt, lower=last_hold - 4 * config.STK_BUY_R * act),
+                    tot_amt=1.01 * act,
+                    sell_max=2 * act * config.TURN_MAX,
                     td_mem=(td_mem > 0).astype(int),
-                    td_mem_weight=config.MEM_HOLD,
+                    td_mem_amt=config.MEM_HOLD * act,
                     td_ind=td_citic,
-                    td_ind_up=(zz_citic + config.CITIC_LIMIT),
-                    td_ind_down=(zz_citic - config.CITIC_LIMIT),
+                    td_ind_up=((zz_citic + config.CITIC_LIMIT) * act),
+                    td_ind_down=((zz_citic - config.CITIC_LIMIT) * act),
                     td_cmvg=td_cmvg,
-                    td_cmvg_up=(zz_cmvg + config.CMVG_LIMIT),
-                    td_cmvg_down=(zz_cmvg - config.CMVG_LIMIT),
+                    td_cmvg_up=((zz_cmvg + config.CMVG_LIMIT) * act),
+                    td_cmvg_down=((zz_cmvg - config.CMVG_LIMIT) * act),
                     td_style=style_fac,
-                    style_up=(zz_style + config.OTHER_LIMIT),
-                    style_down=(zz_style - config.OTHER_LIMIT),
+                    style_up=((zz_style + config.OTHER_LIMIT) * act),
+                    style_down=((zz_style - config.OTHER_LIMIT) * act),
                     solver="SCIPY",
-                    method=config.SOLVER_METHOD,
                 )
 
                 if len(round(tgt_hold).replace(0, np.nan).dropna()) == 0:
@@ -162,8 +161,8 @@ def run_backtest():
             except Exception as e2:
                 print("Second trial failed:", e2)
 
-                # fallback
-                tgt_hold = act * (last_hold * (1 - config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * config.TURN_MAX)
+                # second fallback
+                tgt_hold = last_hold * (1 - 2 * config.TURN_MAX) + td_mem.reindex(code_list).fillna(0) * 2 * config.TURN_MAX * s.total_account
 
         # get to buy and to sell series
         sort_index = td_score.sort_values(ascending=False).index
@@ -200,14 +199,10 @@ def run_backtest():
         td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
         td_hold_num = len(hold_weight)
         td_turnover = (buy_s[date] + sell_s[date]) / act_s[date] * 0.5
-        hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
-        amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
-
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
         td_diff["idx_hold"] = td_MEM_HOLD
         td_diff["hold_num"] = td_hold_num
         td_diff["turnover"] = td_turnover
-        td_diff["amt_weighted_rank"] = amt_weighted_rank
         hold_style_dict[date] = td_diff
 
     # aggregate results
@@ -215,48 +210,7 @@ def run_backtest():
     nv = pd.concat([zs_day.reindex(total_s.index), total_s["total_act"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
     hold_style = pd.DataFrame(hold_style_dict).T
-    info, nv, rel_nv = analyse(nv)
 
-    if config.PLOT:
-        # combine all daily hold_df into a single DataFrame with date information
-        all_hold_df = pd.DataFrame()
-        for date, daily_hold_df in hold_df_dict.items():
-            daily_hold_df_copy = daily_hold_df.copy()
-            daily_hold_df_copy["date"] = date
-            all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
+    info, nv_df, rel_nv = analyse(nv)
 
-        all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
-        plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
-
-    else:
-        json_path = f"/home/haris/project/backtester/para_optimizer_ef/scores/{config.PARA_NAME}.json"
-
-        new_entry = {
-            "parameters": {
-                "CITIC_LIMIT": config.CITIC_LIMIT,
-                "CMVG_LIMIT": config.CMVG_LIMIT,
-                "STK_HOLD_LIMIT": config.STK_HOLD_LIMIT,
-                "OTHER_LIMIT": config.OTHER_LIMIT,
-                "STK_BUY_R": config.STK_BUY_R,
-                "TURN_MAX": config.TURN_MAX,
-                "MEM_HOLD": config.MEM_HOLD,
-            },
-            "backtest_info": [info.to_dict()],
-        }
-
-        if os.path.exists(json_path):
-            with open(json_path, "r", encoding="utf-8") as f:
-                try:
-                    all_data = json.load(f)
-                    if not isinstance(all_data, list):
-                        all_data = [all_data]
-                except json.JSONDecodeError:
-                    all_data = []
-        else:
-            all_data = []
-
-        all_data.append(new_entry)
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(all_data, f, indent=4, ensure_ascii=False)
-
-        print(f"本次回测已追加至统一文件，当前总记录数: {len(all_data)}")
+    return {"total_act_s": total_s, "nv": nv, "info": info, "hold_style": hold_style}

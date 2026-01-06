@@ -61,7 +61,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     # 主图
     ax_main = fig.add_subplot(gs[0, :])
-    plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果")
+    plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})")
     ax_main.set_xlabel("")
     ax_main.legend(["策略净值", "指数净值", "超额净值"], loc="upper left", fontsize=14)
 
@@ -186,7 +186,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     fig_plotly.update_layout(
         height=1300,
         width=1500,
-        title=f"基于{strategy}的策略回测结果",
+        title=f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})",
         legend=dict(x=0.55, y=1.0, xanchor="left", yanchor="top"),
         legend2=dict(x=0.55, y=0.44, xanchor="left", yanchor="top"),
         legend3=dict(x=1.002, y=0.44, xanchor="left", yanchor="top"),
