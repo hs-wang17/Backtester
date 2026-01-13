@@ -43,17 +43,10 @@ class stk:
             The stocks starting with 68 are STAR Market stocks, which can be traded in units of 1 share.
             The other stocks can be traded in units of 100 shares.)
         """
-        self.code = code
-        self.price = price
-        self.up_price = up_price
-        self.low_price = low_price
-        self.sellable_vol = 0
-        self.trade_fee = trade_fee
-        self.volume = 0
-        self.amt = 0
-        prefix = ("%06d" % int(code))[:2]
-        self.minimum_vol = 200 if prefix == "68" else 100
-        self.unit_vol = 1 if prefix == "68" else 100
+        self.code, self.price, self.up_price, self.low_price = code, price, up_price, low_price
+        self.sellable_vol, self.trade_fee, self.volume, self.amt = 0, trade_fee, 0, 0
+        self.minimum_vol = 200 if ("%06d" % int(code))[:2] == "68" else 100
+        self.unit_vol = 1 if ("%06d" % int(code))[:2] == "68" else 100
 
     def update_price(self, price):
         """
@@ -71,7 +64,7 @@ class stk:
         self.price = price
         self.amt = self.volume * price
 
-    def update_info(self, price, up, low):
+    def update_info(self, price, up_price, low_price):
         """
         Update the price, upper limit price and lower limit price of the stock.
 
@@ -79,22 +72,21 @@ class stk:
         ----------
         price : float
             New price of the stock.
-        up : float
+        up_price : float
             New upper limit price of the stock.
-        low : float
+        low_price : float
             New lower limit price of the stock.
         """
         self.update_price(price)
-        self.up_price = up
-        self.low_price = low
+        self.up_price, self.low_price = up_price, low_price
 
-    def buy(self, vol):
+    def buy(self, volume):
         """
         Buy a certain amount of stock.
 
         Parameters
         ----------
-        vol : float
+        volume : float
             The amount of stock to buy.
 
         Returns
@@ -106,18 +98,18 @@ class stk:
         -----
         This function buys a certain amount of stock and updates the total amount of the stock.
         """
-        amt = vol * self.price
-        self.volume += vol
+        amt = volume * self.price
+        self.volume += volume
         self.amt = self.volume * self.price
         return amt
 
-    def sell(self, vol):
+    def sell(self, volume):
         """
         Sell a certain amount of stock.
 
         Parameters
         ----------
-        vol : float
+        volume : float
             The amount of stock to sell.
 
         Returns
@@ -129,9 +121,9 @@ class stk:
         -----
         This function sells a certain amount of stock and updates the total amount of the stock.
         """
-        amt = vol * self.price * (1 - self.trade_fee)
-        self.volume -= vol
-        self.sellable_vol -= vol
+        amt = volume * self.price * (1 - self.trade_fee)
+        self.volume -= volume
+        self.sellable_vol -= volume
         self.amt = self.volume * self.price
         return amt
 
@@ -163,11 +155,7 @@ class account:
         -----
         This function initializes an account object with a given amount of money.
         """
-        self.cash = money
-        self.total_account = money
-        self.hold_dict = {}
-        self.trade_dict = {}
-        self.date = None
+        self.cash, self.total_account, self.hold_dict, self.trade_dict, self.date = money, money, {}, {}, None
 
     def cal_total(self):
         """
@@ -209,17 +197,12 @@ class account:
         -----
         This function refreshes the account information at the start of a trading day by updating the upper limit prices, lower limit prices, and previous close prices for each stock.
         """
-        self.td_upper = td_upper
-        self.td_lower = td_lower
-        self.td_price_now = td_preclose
+        self.td_upper, self.td_lower, self.td_price_now = td_upper, td_lower, td_preclose
         for code, st in self.hold_dict.items():
-            # update price, upper price, lower price
             st.update_info(td_preclose[code], td_upper[code], td_lower[code])
             if code in td_adj:
-                # adjust volume and amount for the stocks split or dividend
                 st.volume *= td_adj[code]
                 st.amt = st.volume * st.price
-            # update sellable volume
             st.sellable_vol = st.volume
         return self.cal_total()
 
@@ -264,7 +247,7 @@ class account:
         """
         amt = self.hold_dict[code].buy(vol)
         self.log_trade(code, self.hold_dict[code].price, vol)
-        self.cash -= amt  # TODO: add try and except
+        self.cash -= amt
         return amt
 
     def sell_stk(self, code, vol):
@@ -335,24 +318,21 @@ class account:
         -----
         This function does not update the prices of the stocks in the portfolio.
         """
-        total_buy = total_sell = 0
+        total_buy, total_sell = 0, 0
 
         # sell
         for code in to_sell_s.index:
             if code not in self.hold_dict:
                 continue
             st = self.hold_dict[code]
-            if st.low_price < st.price < st.up_price:  # TODO: remove the up_price for selling
-                left_sell = st.sellable_vol
-                if left_sell <= st.minimum_vol:
-                    # when sellable volume is less than minimum volume, sell all
-                    total_sell += self.sell_stk(code, left_sell)
+            if st.low_price < st.price < st.up_price:
+                if st.sellable_vol <= st.minimum_vol:
+                    sell_vol = st.sellable_vol
                 else:
-                    # when sellable volume is greater than minimum volume, sell in units
-                    sell_vol = round(to_sell_s[code] / st.unit_vol) * st.unit_vol
-                    sell_vol = min(sell_vol, left_sell)
-                    if sell_vol >= st.minimum_vol:
-                        total_sell += self.sell_stk(code, sell_vol)
+                    sell_vol = min(round(to_sell_s[code] / st.unit_vol) * st.unit_vol, st.sellable_vol)
+                if st.sellable_vol <= st.minimum_vol or sell_vol >= st.minimum_vol:
+                    total_sell += self.sell_stk(code, sell_vol)
+
         # buy
         for code in to_buy_s.index:
             if total_buy >= cash_avail + total_sell - 1000:
@@ -360,14 +340,13 @@ class account:
             if code not in self.hold_dict:
                 self.hold_dict[code] = stk(code, self.td_price_now[code], self.td_upper[code], self.td_lower[code])
             st = self.hold_dict[code]
-            if st.low_price < st.price < st.up_price:  # TODO: remove the low_price for buying
-                # calculate maximum volume to buy according to available funds and trading units
-                max_vol = int((cash_avail + total_sell - total_buy) / (st.price * st.unit_vol)) * st.unit_vol
-                # calculate the maximum volume to buy according to available funds and trading units
-                vol = min(round(to_buy_s[code] / st.unit_vol) * st.unit_vol, max_vol)
+            if st.low_price < st.price < st.up_price:
+                vol = min(
+                    round(to_buy_s[code] / st.unit_vol) * st.unit_vol, int((cash_avail + total_sell - total_buy) / (st.price * st.unit_vol)) * st.unit_vol
+                )
                 if vol >= st.minimum_vol:
                     total_buy += self.buy_stk(code, vol)
-                if st.volume == 0:
+                if st.volume <= 0:
                     del self.hold_dict[code]
         return total_buy, total_sell
 

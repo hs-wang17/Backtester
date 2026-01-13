@@ -29,11 +29,28 @@ def run_backtest():
     adj = adj_factor / adj_factor.shift(1)
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
     vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
-    scores = pd.read_csv(config.SCORES_PATH, index_col=0).T.sort_index().shift(1).dropna(how="all")
-    scores.columns = scores.columns.astype(str).str.zfill(6)
-    scores = scores[scores.columns[scores.columns.str[0].isin(["0", "3", "6"])]]
-    scores.index = scores.index.astype(str)
-    date_list = sorted(scores.index.tolist())
+    # load scores data if it is a string path (single file)
+    if isinstance(config.SCORES_PATH, str):
+        scores = pd.read_csv(config.SCORES_PATH, index_col=0).T.sort_index().shift(1).dropna(how="all")
+        scores.columns = scores.columns.astype(str).str.zfill(6)
+        scores = scores[scores.columns[scores.columns.str[0].isin(["0", "3", "6"])]]
+        scores.index = scores.index.astype(str)
+        date_list = sorted(scores.index.tolist())
+    # load scores data if it is a list of string paths (multiple files)
+    elif isinstance(config.SCORES_PATH, list):
+        scores, index_sets, col_sets = [], [], []
+        for path in config.SCORES_PATH:
+            scores_single = pd.read_csv(path, index_col=0).T.sort_index().shift(1).dropna(how="all")
+            scores_single.columns = scores_single.columns.astype(str).str.zfill(6)
+            scores_single = scores_single[scores_single.columns[scores_single.columns.str[0].isin(["0", "3", "6"])]]
+            scores_single.index = scores_single.index.astype(str)
+            scores.append(scores_single)
+            index_sets.append(set(scores_single.index))
+            col_sets.append(set(scores_single.columns))
+        common_dates = sorted(set.intersection(*index_sets))
+        common_cols = sorted(set.intersection(*col_sets))
+        scores = [df.loc[common_dates, common_cols] for df in scores]
+        date_list = common_dates
 
     """
     Run backtest on the given dataset.
@@ -124,8 +141,12 @@ def run_backtest():
         td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
         td_hold_num = len(hold_weight)
         td_turnover = (buy_s[date] + sell_s[date]) / act_s[date] * 0.5
-        hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
-        amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
+        if isinstance(td_score, list):
+            hold_weight_aligned = hold_weight.reindex(td_score[0].index).fillna(0)
+            amt_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
+        else:
+            hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
+            amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
 
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
         td_diff["idx_hold"] = td_MEM_HOLD

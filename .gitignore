@@ -1,5 +1,8 @@
 archive
 data
 swanlog
-__pycache__
 results
+temp
+para_optimizer_bo
+scores_analysis_gzh
+__pycache__
