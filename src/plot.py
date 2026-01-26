@@ -23,7 +23,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     style_cols = [c for c in hold_style.columns if "style" in c]
 
     hold_num_col = "hold_num"
-    idx_hold_col = "idx_hold"
+    mem_hold_col = "mem_hold"
     turnover_col = "turnover"
     amt_weighted_rank_col = "amt_weighted_rank"
 
@@ -61,7 +61,11 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     # 主图
     ax_main = fig.add_subplot(gs[0, :])
-    plot_df.plot(ax=ax_main, grid=True, title=f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})")
+    plot_df.plot(
+        ax=ax_main,
+        grid=True,
+        title=f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})" if config.STRATEGY == "solve" else f"基于{strategy}的策略回测结果 (top n)",
+    )
     ax_main.set_xlabel("")
     ax_main.legend(["策略净值", "指数净值", "超额净值"], loc="upper left", fontsize=14)
 
@@ -86,7 +90,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     ax_style.tick_params(axis="x", labelrotation=30)
 
     ax_turnover = fig.add_subplot(gs[2, 1])
-    mix_cols = [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]
+    mix_cols = [c for c in [mem_hold_col, turnover_col] if c in hold_style.columns]
     mean_map = {c: hold_style[c].mean() for c in mix_cols}
     hold_style[mix_cols].plot(ax=ax_turnover, grid=True, legend=False)
     labels = [f"{c} ({mean_map[c]:.2f})" for c in mix_cols]
@@ -128,11 +132,14 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
             txt = f"{v:.4f}" if k == "信息比率" else f"{v*100:.2f}%"
             fig.text(1.15 + 0.1 * j, y, txt, fontsize=16, ha="right", family="WenQuanYi Micro Hei")
 
-    png_path = (
-        f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
-        if strategy
-        else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
-    )
+    if config.STRATEGY == "solve":
+        png_path = (
+            f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
+            if strategy
+            else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
+        )
+    else:
+        png_path = f"/home/haris/results/backtests/{strategy}_topn.png" if strategy else "/home/haris/results/backtests/strategy_topn.png"
     fig.savefig(png_path, format="png", bbox_inches="tight")
     plt.close(fig)
     print(f"PNG 已保存: {png_path}")
@@ -171,7 +178,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     for col in style_cols:
         fig_plotly.add_trace(go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=col, showlegend=True, legend="legend4"), row=4, col=1)
     # row=4,col=2：成分股占比 / 换手率（legend5）
-    for col in [c for c in [idx_hold_col, turnover_col] if c in hold_style.columns]:
+    for col in [c for c in [mem_hold_col, turnover_col] if c in hold_style.columns]:
         mean_val = hold_style[col].mean()
         fig_plotly.add_trace(
             go.Scatter(x=hold_index_dt, y=hold_style[col].values, mode="lines", name=f"{col} ({mean_val:.2f})", showlegend=True, legend="legend5"), row=4, col=3
@@ -186,7 +193,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     fig_plotly.update_layout(
         height=1300,
         width=1500,
-        title=f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})",
+        title=f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})" if config.STRATEGY == "solve" else f"基于{strategy}的策略回测结果 (top n)",
         legend=dict(x=0.55, y=1.0, xanchor="left", yanchor="top"),
         legend2=dict(x=0.55, y=0.44, xanchor="left", yanchor="top"),
         legend3=dict(x=1.002, y=0.44, xanchor="left", yanchor="top"),
@@ -229,10 +236,13 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     )
 
     # 保存可交互 HTML
-    html_path = (
-        f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
-        if strategy
-        else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
-    )
+    if config.STRATEGY == "solve":
+        html_path = (
+            f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.html"
+            if strategy
+            else "/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.html"
+        )
+    else:
+        html_path = f"/home/haris/results/backtests/{strategy}_topn.html" if strategy else "/home/haris/results/backtests/strategy_topn.html"
     pio.write_html(fig_plotly, file=html_path, auto_open=False)
     print(f"可交互 HTML 已保存: {html_path}")

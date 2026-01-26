@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 import datetime
 
 # ==================== 路径配置 ====================
@@ -20,9 +19,10 @@ citic1 = load_daily_data("stk_citic1_name").ffill()  # 中信一级行业分类
 date_list = citic1.index.tolist()  # 所有交易日列表
 ipo_dates = (load_daily_data("stk_adjclose").replace(0, np.nan).ffill() > 0).cumsum()  # 上市天数（首次有复权收盘价算第1天）
 
-is_st = load_daily_data("stk_is_st_stock")
-is_stop = load_daily_data("stk_is_stop_stock")
-st_status = (is_st + is_stop).fillna(1)  # ST/停牌标记（0=正常）, 有任一为1即视为不可交易
+is_st = load_daily_data("stk_is_st_stock")  # ST标记
+is_stop = load_daily_data("stk_is_stop_stock")  # 停牌标记
+is_tuishi_ing = load_daily_data("stk_is_tuishi_ing")  # 退市整理标记
+st_status = (is_st + is_stop + is_tuishi_ing).filLna(1)  # ST/停牌/退市整理标记（0=正常）, 有任一为1即视为不可交易
 
 cmv = load_daily_data("stk_neg_market_value") / 1e8  # 流通市值（单位：亿）
 cmv = cmv[[c for c in cmv.columns if c[0] in "036"]]  # 只保留A股
@@ -57,7 +57,7 @@ amt_perdeal = (amount / dealnum).replace([np.inf, -np.inf], np.nan)
 # ==================== 计算每日超额收益（行业/市值/风格） ====================
 ind_ret_dict, mvg_ret_dict, sty_ret_dict, mkt_ret_dict = ({}, {}, {}, {})
 
-for date in tqdm(date_list[70:]):
+for date in date_list[70:]:
     last_date = date_list[date_list.index(date) - 1]
     td_citic = citic1.loc[last_date].dropna()
     td_cmvg = cmv_group.loc[last_date].dropna()
@@ -110,7 +110,7 @@ mkt_ret_s = pd.Series(mkt_ret_dict)
 # 更新数据
 os.makedirs(save_path, exist_ok=True)
 ok_list = os.listdir(save_path)
-for date in tqdm(date_list[150:]):
+for date in date_list[150:]:
     dt_str = date
     if date + ".fea" in ok_list:
         continue

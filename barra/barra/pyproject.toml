@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "barra"
+version = "0.0.1"
+authors = [{ name = "Example Author", email = "author@example.com" }]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88 # 设置行宽度，默认是 88
+
+[tool.ruff.format]
+line-ending = "auto"
+
+[tool.pyright]
+typeCheckingMode = "basic"    # 保持基本检查
+reportUnusedVariable = "none" # 但禁用烦人的未使用变量警告
+
+[tool.ruff.lint]
+select = ["E", "F", "W"] # 启用基本规则
+ignore = [
+    "E501", # 忽略行长限制
+    "E402", # 忽略导入顺序
+]

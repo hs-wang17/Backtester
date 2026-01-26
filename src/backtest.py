@@ -23,17 +23,27 @@ def run_backtest():
     adj_factor = load_daily_data("stk_adjfactor").replace(0, np.nan).ffill()
     close = load_daily_data("stk_close").replace(0, np.nan).ffill()
     last_zt_df = (close == high_limit).shift(1).fillna(False).astype(int)
+
     # stop buying stocks at 90% of limit up and limit down prices
     upper_price = pre_close + 0.9 * (high_limit - pre_close)
     lower_price = pre_close + 0.9 * (low_limit - pre_close)
     adj = adj_factor / adj_factor.shift(1)
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
     vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
-    scores = pd.read_csv(config.SCORES_PATH, index_col=0).T.sort_index().shift(1).dropna(how="all")
-    scores.columns = scores.columns.astype(str).str.zfill(6)
-    scores = scores[scores.columns[scores.columns.str[0].isin(["0", "3", "6"])]]
-    scores.index = scores.index.astype(str)
-    date_list = sorted(scores.index.tolist())
+
+    scores, index_sets, col_sets = [], [], []
+    for path in config.SCORES_PATH:
+        scores_single = pd.read_csv(path, index_col=0).T.sort_index().shift(1).dropna(how="all")
+        scores_single.columns = scores_single.columns.astype(str).str.zfill(6)
+        scores_single = scores_single[scores_single.columns[scores_single.columns.str[0].isin(["0", "3", "6"])]]
+        scores_single.index = scores_single.index.astype(str)
+        scores.append(scores_single)
+        index_sets.append(set(scores_single.index))
+        col_sets.append(set(scores_single.columns))
+    common_dates = sorted(set.intersection(*index_sets))
+    common_cols = sorted(set.intersection(*col_sets))
+    scores = [df.loc[common_dates, common_cols] for df in scores]
+    date_list = common_dates[config.START_DATE_SHIFT :]  # apply start date shift
 
     """
     Run backtest on the given dataset.
@@ -121,14 +131,18 @@ def run_backtest():
         td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic  # 行业偏离
         td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg  # 市值偏离
         td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style  # 风格偏离
-        td_MEM_HOLD = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
+        td_mem_hold = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
         td_hold_num = len(hold_weight)
         td_turnover = (buy_s[date] + sell_s[date]) / act_s[date] * 0.5
-        hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
-        amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
+        if isinstance(td_score, list):
+            hold_weight_aligned = hold_weight.reindex(td_score[0].index).fillna(0)
+            amt_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
+        else:
+            hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
+            amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
 
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
-        td_diff["idx_hold"] = td_MEM_HOLD
+        td_diff["mem_hold"] = td_mem_hold
         td_diff["hold_num"] = td_hold_num
         td_diff["turnover"] = td_turnover
         td_diff["amt_weighted_rank"] = amt_weighted_rank
@@ -149,7 +163,10 @@ def run_backtest():
             daily_hold_df_copy["date"] = date
             all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
 
-        all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
+        if config.STRATEGY == "solve":
+            all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
+        elif config.STRATEGY == "topn":
+            all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_topn_hold_df.csv", index_label="code")
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     else:

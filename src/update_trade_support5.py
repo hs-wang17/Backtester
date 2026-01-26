@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 import datetime
 
 # ==================== 路径配置 ====================
@@ -22,7 +21,7 @@ os.chdir(min_path)
 files = os.listdir()
 vwap_dict = {}
 
-for f in tqdm(files, desc="计算早盘30分钟VWAP"):
+for f in files:
     data = pd.read_feather(f)
     vol = data.pivot(index="time", columns="code", values="volume")
     amt = data.pivot(index="time", columns="code", values="amount")
@@ -32,7 +31,6 @@ for f in tqdm(files, desc="计算早盘30分钟VWAP"):
 vwap_df = pd.DataFrame(vwap_dict).T.sort_index()
 os.chdir(backtest_path)
 vwap_df.to_feather("vwap.fea")
-# vwap_df.to_feather("/home/haris/share/haris/backtester/data/vwap.fea")
 
 
 # ==================== 基础数据准备 ====================
@@ -40,9 +38,10 @@ citic1 = load_daily_data("stk_citic1_name").ffill()  # 中信一级行业分类
 date_list = citic1.index.tolist()  # 所有交易日列表
 ipo_dates = (load_daily_data("stk_adjclose").replace(0, np.nan).ffill() > 0).cumsum()  # 上市天数（首次有复权收盘价算第1天）
 
-is_st = load_daily_data("stk_is_st_stock")
-is_stop = load_daily_data("stk_is_stop_stock")
-st_status = (is_st + is_stop).fillna(1)  # ST/停牌标记（0=正常）, 有任一为1即视为不可交易
+is_st = load_daily_data("stk_is_st_stock")  # ST标记
+is_stop = load_daily_data("stk_is_stop_stock")  # 停牌标记
+is_tuishi_ing = load_daily_data("stk_is_tuishi_ing")  # 退市整理标记
+st_status = (is_st + is_stop + is_tuishi_ing).filLna(1)  # ST/停牌/退市整理标记（0=正常）, 有任一为1即视为不可交易
 
 cmv = load_daily_data("stk_neg_market_value") / 1e8  # 流通市值（单位：亿）
 cmv = cmv[[c for c in cmv.columns if c[0] in "036"]]  # 只保留A股
@@ -70,7 +69,7 @@ value_fac = pb.rank(ascending=False, pct=True, axis=1) + pe.rank(ascending=False
 # ==================== 计算每日超额收益（行业/市值/风格） ====================
 ind_ret_dict, mvg_ret_dict, sty_ret_dict, mkt_ret_dict = ({}, {}, {}, {})
 
-for date in tqdm(date_list[70:], desc="计算每日超额收益"):  # 前70天用于滚动计算
+for date in date_list[70:]:  # 前70天用于滚动计算
     last_date = date_list[date_list.index(date) - 1]  # 因子排序使用前一天数据
     td_ret = ret1.loc[date].dropna()  # 当日个股收益率
 
@@ -133,7 +132,7 @@ os.makedirs(save_path, exist_ok=True)
 os.chdir(save_path)
 exist_files = os.listdir()
 
-for date in tqdm(date_list[150:], desc="生成每日特征文件"):  # 前150天用于60日回归窗口
+for date in date_list[150:]:  # 前150天用于60日回归窗口
     # if f"{date}.fea" in exist_files:
     #     continue
 
