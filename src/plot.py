@@ -138,18 +138,6 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
                 txt_color = STYLE["colors"]["text_main"]
                 val_str = str(text_val)
 
-                # # 如果是数值列且包含%，根据正负变色（可选）
-                # if ha == "right" and ("%" in val_str or "." in val_str):
-                #     # 1. 清理字符串：去除百分号、逗号，以便转换为浮点数
-                #     clean_str = val_str.replace("%", "").replace(",", "")
-                #     val_float = float(clean_str)
-
-                #     # 2. 判断正负 (A股风格：红涨绿跌)
-                #     if val_float > 0.0001:
-                #         txt_color = "#D62728"  # 红色 (Tab10 Red)
-                #     elif val_float < -0.0001:
-                #         txt_color = "#2CA02C"  # 绿色 (Tab10 Green)
-
                 fig.text(
                     text_x,
                     row_y + row_height / 2,
@@ -216,7 +204,9 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         hold_style[cmvg_cols].plot(ax=ax_cmvg, linewidth=1.5, alpha=0.8)
     beautify_axis(ax_cmvg, "市值偏离", fontsize=STYLE["font_size"]["subtitle"])
     ax_cmvg.tick_params(axis="x", labelrotation=30)
-    ax_cmvg.legend(fontsize=STYLE["font_size"]["small"], loc="upper right", framealpha=0.8)
+    ax_cmvg.legend(
+        [f"分组{i}" for i in range(1, len(cmvg_cols) + 1)], fontsize=STYLE["font_size"]["small"], loc="upper right", framealpha=0.8
+    )
 
     # 3. 次图：持股数量
     ax_holdnum = fig.add_subplot(gs[1, 1])
@@ -226,7 +216,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         # 使用双色避免混淆
         colors_hold = [STYLE["colors"]["strategy"], STYLE["colors"]["excess"]]
         hold_style[mix_cols_1].plot(ax=ax_holdnum, color=colors_hold[: len(mix_cols_1)], linewidth=1.5)
-        labels_1 = [f"{c} ({mean_map_1[c]:.2f})" for c in mix_cols_1]
+        labels_1 = [f"{name} ({mean_map_1[c]:.2f})" for name, c in zip(["持股数量", "市值加权排名"], mix_cols_1)]
         ax_holdnum.legend(labels_1, fontsize=STYLE["font_size"]["small"], framealpha=0.8)
     beautify_axis(ax_holdnum, "持股数量 / 市值加权排名", fontsize=STYLE["font_size"]["subtitle"])
     ax_holdnum.tick_params(axis="x", labelrotation=30)
@@ -238,7 +228,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         hold_style[style_cols].plot(ax=ax_style, color=colors, linewidth=1.5, alpha=0.8)
     beautify_axis(ax_style, "风格偏离", fontsize=STYLE["font_size"]["subtitle"])
     ax_style.tick_params(axis="x", labelrotation=30)
-    ax_style.legend(ncol=2, fontsize=STYLE["font_size"]["small"], loc="upper left", framealpha=0.8)
+    ax_style.legend([f"分组{i[8:]}" for i in style_cols], ncol=2, fontsize=STYLE["font_size"]["small"], loc="upper left", framealpha=0.8)
 
     # 5. 次图：换手率
     ax_turnover = fig.add_subplot(gs[2, 1])
@@ -247,7 +237,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         mean_map_2 = {c: hold_style[c].mean() for c in mix_cols_2}
         colors_turn = [STYLE["colors"]["strategy"], STYLE["colors"]["benchmark"]]
         hold_style[mix_cols_2].plot(ax=ax_turnover, color=colors_turn[: len(mix_cols_2)], linewidth=1.5)
-        labels_2 = [f"{c} ({mean_map_2[c]:.2f})" for c in mix_cols_2]
+        labels_2 = [f"{name} ({mean_map_2[c]:.2f})" for name, c in zip(["成分股占比", "换手率"], mix_cols_2)]
         ax_turnover.legend(labels_2, fontsize=STYLE["font_size"]["small"], framealpha=0.8)
     beautify_axis(ax_turnover, "成分股占比 / 换手率", fontsize=STYLE["font_size"]["subtitle"])
     ax_turnover.tick_params(axis="x", labelrotation=30)
@@ -297,7 +287,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     current_y -= 0.05
 
-    # 表格 3：回测参数配置 (恢复为4列布局)
+    # 表格 3：回测参数配置
     # 准备左侧数据
     parameters_left = ["行业限制", "市值限制", "风格限制", "换手率限制"]
     param_vals_left = [config.CITIC_LIMIT, config.CMVG_LIMIT, config.OTHER_LIMIT, config.TURN_MAX]
