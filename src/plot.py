@@ -228,7 +228,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         hold_style[style_cols].plot(ax=ax_style, color=colors, linewidth=1.5, alpha=0.8)
     beautify_axis(ax_style, "风格偏离", fontsize=STYLE["font_size"]["subtitle"])
     ax_style.tick_params(axis="x", labelrotation=30)
-    ax_style.legend([f"分组{i[8:]}" for i in style_cols], ncol=2, fontsize=STYLE["font_size"]["small"], loc="upper left", framealpha=0.8)
+    ax_style.legend([f"{i[8:]}" for i in style_cols], ncol=2, fontsize=STYLE["font_size"]["small"], loc="upper left", framealpha=0.8)
 
     # 5. 次图：换手率
     ax_turnover = fig.add_subplot(gs[2, 1])
