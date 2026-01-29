@@ -15,6 +15,7 @@ def str2bool(v):
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--afternoon_start", type=str2bool, default=False, help="Afternoon start")
     parser.add_argument("--citic_limit", type=float, default=None, help="Citic limit")
     parser.add_argument("--cmvg_limit", type=float, default=None, help="Cmvg limit")
     parser.add_argument("--daily_sell_num", type=int, default=20, help="Daily sell number")

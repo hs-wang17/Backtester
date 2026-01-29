@@ -12,7 +12,7 @@ SCORES_PATH = r"/home/haris/results/predictions/StockPredictor_20251119_043804_c
 HOLD_DF_PATH = r"/home/haris/results/backtests/"
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]
 TRADE_SUPPORT = 5
-N_CALLS = 1000
+N_CALLS = 200
 N_RANDOM_STARTS = 100
 
 

@@ -91,7 +91,7 @@ def get_daily_support5(str_date):
     if str_date not in data_cache["daily_support"]:
         os.chdir(config.SUPPORT5_PATH)
         support_dates = sorted(os.listdir(config.SUPPORT5_PATH))
-        last_date = [x for x in support_dates if x < str_date[:8]][-1]
+        last_date = [x for x in support_dates if x[:8] < str_date[:8]][-1]
         df = pd.read_feather(last_date)
         # ignore the stocks listed within 120 days (ipo) and ST stocks
         sub_code = df.loc[(df["ipo_dates"] > 120) & (df["st"] == 0)].index.tolist()
@@ -125,7 +125,7 @@ def get_daily_support7(str_date):
     if str_date not in data_cache["daily_support"]:
         os.chdir(config.SUPPORT7_PATH)
         support_dates = sorted(os.listdir(config.SUPPORT7_PATH))
-        last_date = [x for x in support_dates if x < str_date[:8]][-1]
+        last_date = [x for x in support_dates if x[:8] < str_date[:8]][-1]
         df = pd.read_feather(last_date)
         # ignore the stocks listed within 120 days (ipo) and ST stocks
         sub_code = df.loc[(df["ipo_dates"] > 120) & (df["st"] == 0)].index.tolist()

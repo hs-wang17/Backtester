@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import datetime
+from tqdm import tqdm
 
 # ==================== 路径配置 ====================
 save_path = r"/home/haris/project/backtester/data/trade_support5"  # 每日特征输出路径
@@ -25,12 +26,28 @@ for f in files:
     data = pd.read_feather(f)
     vol = data.pivot(index="time", columns="code", values="volume")
     amt = data.pivot(index="time", columns="code", values="amount")
-    # 前30分钟成交额/成交量 = VWAP
+    # 早盘前30分钟成交额/成交量 = VWAP
     vwap_dict[f[:8]] = amt.iloc[:30].sum() / (vol.iloc[:30].sum().replace(0, np.nan))
 
 vwap_df = pd.DataFrame(vwap_dict).T.sort_index()
 os.chdir(backtest_path)
 vwap_df.to_feather("vwap.fea")
+
+# ==================== 计算午盘30分钟VWAP ====================
+os.chdir(min_path)
+files = os.listdir()
+vwap_noon_dict = {}
+
+for f in tqdm(files):
+    data = pd.read_feather(f)
+    vol = data.pivot(index="time", columns="code", values="volume")
+    amt = data.pivot(index="time", columns="code", values="amount")
+    # 午盘前30分钟成交额/成交量 = VWAP
+    vwap_noon_dict[f[:8]] = amt.iloc[121:151].sum() / (vol.iloc[121:151].sum().replace(0, np.nan))
+
+vwap_noon_df = pd.DataFrame(vwap_noon_dict).T.sort_index()
+os.chdir(backtest_path)
+vwap_noon_df.to_feather("vwap_noon.fea")
 
 
 # ==================== 基础数据准备 ====================

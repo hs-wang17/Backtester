@@ -5,7 +5,21 @@ from src.portfolio_optimizer import solve_problem
 
 
 def solve_strategy(
-    s, act, code_list, code_list_all, zt_codes, td_score, td_mem, stk_perm, td_citic, zz_citic, td_cmvg, zz_cmvg, style_fac, zz_style, td_preclose
+    s,
+    act,
+    code_list,
+    code_list_all,
+    zt_codes,
+    td_score,
+    td_mem,
+    stk_perm,
+    td_citic,
+    zz_citic,
+    td_cmvg,
+    zz_cmvg,
+    style_fac,
+    zz_style,
+    td_preclose,
 ):
     """Solve strategy: Optimize portfolio based on various constraints and scores."""
 
@@ -31,8 +45,12 @@ def solve_strategy(
                     code_list=code_list,
                     x_last=last_hold_init,
                     score=(td_score_single - td_score_single.min()) / (td_score_single.max() - td_score_single.min()),
-                    stk_low=(td_mem - stk_perm).clip(0).clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
-                    stk_high=(td_mem + stk_perm).clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
+                    stk_low=(td_mem - stk_perm)
+                    .clip(0)
+                    .clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
+                    stk_high=(td_mem + stk_perm).clip(
+                        upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R
+                    ),
                     tot_weight=1.01,
                     sell_max=1,  # allow full adjustment of holding
                     td_mem=(td_mem > 0).astype(int),
@@ -152,8 +170,12 @@ def solve_strategy(
                         code_list=code_list,
                         x_last=last_hold_init,
                         score=(td_score_single - td_score_single.min()) / (td_score_single.max() - td_score_single.min()),
-                        stk_low=(td_mem - stk_perm).clip(0).clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
-                        stk_high=(td_mem + stk_perm).clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
+                        stk_low=(td_mem - stk_perm)
+                        .clip(0)
+                        .clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
+                        stk_high=(td_mem + stk_perm).clip(
+                            upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R
+                        ),
                         tot_weight=1.01,
                         sell_max=1,  # allow full adjustment
                         td_mem=(td_mem > 0).astype(int),

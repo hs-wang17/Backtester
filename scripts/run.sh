@@ -2,9 +2,9 @@
 
 # single score
 # 1) solve trade support 5
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260122.csv --trade_support 5
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel/predictions/StockPredictor_20251231/predictions_period_20260128.csv --trade_support 5
 # 2) solve trade support 7
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260122.csv --trade_support 7
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel/predictions/StockPredictor_20251231/predictions_period_20260128.csv --trade_support 7
 # 3) topn
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260122.csv --trade_support 7 --strategy topn
 

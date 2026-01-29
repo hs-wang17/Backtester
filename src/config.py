@@ -16,6 +16,7 @@ SCORES_PATH = r"/home/haris/results/predictions/StockPredictor_20251119_043804_c
 HOLD_DF_PATH = r"/home/haris/results/backtests/"  # 持仓文件
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]  # 策略名称
 PLOT = True  # 是否绘制回测结果
+AFTERNOON_START = True  # 是否下午交易
 PARA_NAME = None  # 参数文件
 SOLVER_METHOD = "basic"  # 优化方法
 STRATEGY = "solve"  # 策略
@@ -45,20 +46,20 @@ INITIAL_MONEY = 200000000.0  # 初始资金
 INITIAL_MONEY = 10010000.0  # 初始资金
 
 # constraint parameters
-CITIC_LIMIT = 0.06  # 行业限制
-CMVG_LIMIT = 0.2  # 市值限制
-STK_HOLD_LIMIT = 0.0106  # 个股持仓限制
-OTHER_LIMIT = 1.08  # 其他指标限制
+CITIC_LIMIT = 0.06  # 行业
+CMVG_LIMIT = 0.2  # 市值
+STK_HOLD_LIMIT = 0.0106  # 个股持仓
+OTHER_LIMIT = 1.08  # 风格
 STK_BUY_R = 0.0072  # 个股买入比例
-TURN_MAX = 0.09  # 个股最大买入比例
-MEM_HOLD = 0.2  # 成员股持仓限制
+TURN_MAX = 0.09  # 换手率
+MEM_HOLD = 0.2  # 成分股持仓
 
 
 def update_from_args(args):
     """Update configuration from command line arguments."""
     global SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
     global CITIC_LIMIT, CMVG_LIMIT, STK_HOLD_LIMIT, OTHER_LIMIT, STK_BUY_R, TURN_MAX, MEM_HOLD
-    global PLOT, PARA_NAME, SOLVER_METHOD, STRATEGY
+    global PLOT, AFTERNOON_START, PARA_NAME, SOLVER_METHOD, STRATEGY
     global TOT_HOLD_NUM, DAILY_SELL_NUM, HOLD_INIT, START_DATE_SHIFT, LAMBDA_SPARSE
 
     if args.scores_path:
@@ -74,41 +75,42 @@ def update_from_args(args):
 
     if TRADE_SUPPORT == 5:
         # parameter 0
-        CITIC_LIMIT = 0.09522923178628084  # 行业限制 (范围0-2)
-        CMVG_LIMIT = 1.4773003074308027  # 市值限制 (范围0-2)
-        STK_HOLD_LIMIT = 0.005572496051203135  # 个股持仓限制 (范围0-0.02)
-        OTHER_LIMIT = 0.18291207860261288  # 其他指标限制 (范围0-2)
+        CITIC_LIMIT = 0.09522923178628084  # 行业 (范围0-2)
+        CMVG_LIMIT = 1.4773003074308027  # 市值 (范围0-2)
+        STK_HOLD_LIMIT = 0.005572496051203135  # 个股持仓 (范围0-0.02)
+        OTHER_LIMIT = 0.18291207860261288  # 风格 (范围0-2)
         STK_BUY_R = 0.009569219620263202  # 个股买入比例 (范围0.001-0.02)
-        TURN_MAX = 0.09379183056054619  # 个股最大买入比例 (范围0.03-0.2)
-        MEM_HOLD = 0.38996638586551474  # 成员股持仓限制 (范围0-0.4)
+        TURN_MAX = 0.09379183056054619  # 换手率 (范围0.03-0.2)
+        MEM_HOLD = 0.38996638586551474  # 成分股持仓 (范围0-0.4)
 
         # parameter 1
-        CITIC_LIMIT = 0.06  # 行业限制
-        CMVG_LIMIT = 0.2  # 市值限制
-        STK_HOLD_LIMIT = 0.0106  # 个股持仓限制
-        OTHER_LIMIT = 1.08  # 其他指标限制
+        CITIC_LIMIT = 0.06  # 行业
+        CMVG_LIMIT = 0.2  # 市值
+        STK_HOLD_LIMIT = 0.0106  # 个股持仓
+        OTHER_LIMIT = 1.08  # 风格
         STK_BUY_R = 0.0072  # 个股买入比例
-        TURN_MAX = 0.09  # 个股最大买入比例
-        MEM_HOLD = 0.2  # 成员股持仓限制
+        TURN_MAX = 0.09  # 换手率
+        MEM_HOLD = 0.2  # 成分股持仓
 
     elif TRADE_SUPPORT == 7:
-        # multiple score
-        CITIC_LIMIT = 0.0  # 行业限制 (范围0-0.5)
-        CMVG_LIMIT = 0.5  # 市值限制 (范围0-0.5)
-        STK_HOLD_LIMIT = 0.0093646643386971 * 1.5  # 个股持仓限制 (范围0-0.02)
-        OTHER_LIMIT = 0.5  # 其他指标限制 (范围0-0.5)
-        STK_BUY_R = 0.02 * 1.5  # 个股买入比例 (范围0.001-0.02)
-        TURN_MAX = 0.06371569969647878  # 个股最大买入比例 (范围0.03-0.2)
-        MEM_HOLD = 0.0  # 成员股持仓限制 (范围0-0.4)
-
-        # single score
-        CITIC_LIMIT = 0.0  # 行业限制 (范围0-0.5)
-        CMVG_LIMIT = 0.5  # 市值限制 (范围0-0.5)
-        STK_HOLD_LIMIT = 0.0093646643386971  # 个股持仓限制 (范围0-0.02)
-        OTHER_LIMIT = 0.5  # 其他指标限制 (范围0-0.5)
-        STK_BUY_R = 0.02  # 个股买入比例 (范围0.001-0.02)
-        TURN_MAX = 0.06371569969647878  # 个股最大买入比例 (范围0.03-0.2)
-        MEM_HOLD = 0.0  # 成员股持仓限制 (范围0-0.4)
+        if len(SCORES_PATH) > 1:
+            # multiple score
+            CITIC_LIMIT = 0.0  # 行业 (范围0-0.5)
+            CMVG_LIMIT = 0.5  # 市值 (范围0-0.5)
+            STK_HOLD_LIMIT = 0.0093646643386971 * 1.5  # 个股持仓 (范围0-0.02)
+            OTHER_LIMIT = 0.5  # 风格 (范围0-0.5)
+            STK_BUY_R = 0.02 * 1.5  # 个股买入比例 (范围0.001-0.02)
+            TURN_MAX = 0.06371569969647878  # 换手率 (范围0.03-0.2)
+            MEM_HOLD = 0.0  # 成份股持仓 (范围0-0.4)
+        elif len(SCORES_PATH) == 1:
+            # single score
+            CITIC_LIMIT = 0.0  # 行业 (范围0-0.5)
+            CMVG_LIMIT = 0.5  # 市值 (范围0-0.5)
+            STK_HOLD_LIMIT = 0.0093646643386971  # 个股持仓 (范围0-0.02)
+            OTHER_LIMIT = 0.5  # 风格 (范围0-0.5)
+            STK_BUY_R = 0.02  # 个股买入比例 (范围0.001-0.02)
+            TURN_MAX = 0.06371569969647878  # 换手率 (范围0.03-0.2)
+            MEM_HOLD = 0.0  # 成份股持仓 (范围0-0.4)
 
     if args.citic_limit:
         CITIC_LIMIT = args.citic_limit
@@ -127,6 +129,8 @@ def update_from_args(args):
 
     if not args.plot:
         PLOT = False
+    if not args.afternoon_start:
+        AFTERNOON_START = False
     if args.para_name:
         PARA_NAME = args.para_name
     if args.solver_method:

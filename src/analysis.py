@@ -41,12 +41,13 @@ def analyse(net_value):
     df.columns = ["strategy", "zs"]
     df["excess"] = df["strategy"] - df["zs"]
     df.index = pd.to_datetime(df.index.astype(str), format="%Y%m%d")
-    ex_ret, ex_std, ir = {}, {}, {}
+    ex_ret, ex_std, ex_max_dd, ir = {}, {}, {}, {}
     for year, y_ret in df["excess"].groupby(df.index.year):
         mean_y = y_ret.mean() * 250
         std_y = y_ret.std() * np.sqrt(250)
         ex_ret[year] = mean_y
         ex_std[year] = std_y
+        ex_max_dd[year] = (y_ret.cumsum().cummax() - y_ret.cumsum()).max()
         ir[year] = mean_y / std_y if std_y > 0 else np.nan
 
     info = pd.Series(
@@ -67,6 +68,7 @@ def analyse(net_value):
             "超额胜率(天)": rel_win_rate,
             "逐年超额年化收益": ex_ret,
             "逐年超额年化波动": ex_std,
+            "逐年超额最大回撤": ex_max_dd,
             "逐年信息比率": ir,
         }
     )

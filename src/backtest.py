@@ -29,11 +29,17 @@ def run_backtest():
     lower_price = pre_close + 0.9 * (low_limit - pre_close)
     adj = adj_factor / adj_factor.shift(1)
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
-    vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
+    if config.AFTERNOON_START:
+        vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
+    else:
+        vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
 
     scores, index_sets, col_sets = [], [], []
     for path in config.SCORES_PATH:
-        scores_single = pd.read_csv(path, index_col=0).T.sort_index().shift(1).dropna(how="all")
+        if config.AFTERNOON_START:
+            scores_single = pd.read_csv(path, index_col=0).T.sort_index().dropna(how="all")
+        else:
+            scores_single = pd.read_csv(path, index_col=0).T.sort_index().shift(1).dropna(how="all")
         scores_single.columns = scores_single.columns.astype(str).str.zfill(6)
         scores_single = scores_single[scores_single.columns[scores_single.columns.str[0].isin(["0", "3", "6"])]]
         scores_single.index = scores_single.index.astype(str)
@@ -80,7 +86,17 @@ def run_backtest():
     trade_df_dict = {}  # save each day's trade
     hold_style_dict = {}  # save each day's holding style diff
 
-    for date in tqdm(date_list, desc="Backtesting"):
+    if config.AFTERNOON_START:
+        start_idx = 1
+    else:
+        start_idx = 0
+    for idx_date in tqdm(range(start_idx, len(date_list)), desc="Backtesting"):
+        date = date_list[idx_date]
+        if config.AFTERNOON_START:
+            support_date = date_list[idx_date - 1]
+        else:
+            support_date = date
+
         # get daily data
         td_open, td_close, td_preclose, td_adj, td_score, td_upper, td_lower, last_zt = get_daily_price(
             str(date), vwap_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df
@@ -88,13 +104,15 @@ def run_backtest():
 
         # get daily support data
         if config.TRADE_SUPPORT == 5:
-            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(date))
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(support_date))
         else:
-            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(date))
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(support_date))
 
         # get today's tradable and zt stocks
         code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
-        code_list = [x for x in code_list_all if (x in sub_code_list) and (x[0] not in ["4", "8"])]  # tradable stocks except new/ST/BSE stocks
+        code_list = [
+            x for x in code_list_all if (x in sub_code_list) and (x[0] not in ["4", "8"])
+        ]  # tradable stocks except new/ST/BSE stocks
         zt_codes = last_zt[last_zt == 1].index.tolist()
         code_list_zt = [x for x in code_list if x not in zt_codes]  # remove zt stocks
 
@@ -107,7 +125,21 @@ def run_backtest():
         # strategy
         if config.STRATEGY == "solve":
             to_buy_s, to_sell_s = solve_strategy(
-                s, act, code_list, code_list_all, zt_codes, td_score, td_mem, stk_perm, td_citic, zz_citic, td_cmvg, zz_cmvg, style_fac, zz_style, td_preclose
+                s,
+                act,
+                code_list,
+                code_list_all,
+                zt_codes,
+                td_score,
+                td_mem,
+                stk_perm,
+                td_citic,
+                zz_citic,
+                td_cmvg,
+                zz_cmvg,
+                style_fac,
+                zz_style,
+                td_preclose,
             )
         elif config.STRATEGY == "topn":
             to_buy_s, to_sell_s = topn_strategy(s, act, code_list, code_list_all, code_list_zt, td_score, td_preclose)
@@ -149,7 +181,11 @@ def run_backtest():
         hold_style_dict[date] = td_diff
 
     # aggregate results
-    total_s = pd.concat([pd.Series(act_s), pd.Series(cash_s), pd.Series(buy_s), pd.Series(sell_s)], axis=1, keys=["total_act", "cash", "buy_amt", "sell_amt"])
+    total_s = pd.concat(
+        [pd.Series(act_s), pd.Series(cash_s), pd.Series(buy_s), pd.Series(sell_s)],
+        axis=1,
+        keys=["total_act", "cash", "buy_amt", "sell_amt"],
+    )
     nv = pd.concat([zs_day.reindex(total_s.index), total_s["total_act"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
     hold_style = pd.DataFrame(hold_style_dict).T
@@ -164,7 +200,9 @@ def run_backtest():
             all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
 
         if config.STRATEGY == "solve":
-            all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code")
+            all_hold_df.to_csv(
+                config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code"
+            )
         elif config.STRATEGY == "topn":
             all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_topn_hold_df.csv", index_label="code")
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
