@@ -58,7 +58,7 @@ ipo_dates = (load_daily_data("stk_adjclose").replace(0, np.nan).ffill() > 0).cum
 is_st = load_daily_data("stk_is_st_stock")  # ST标记
 is_stop = load_daily_data("stk_is_stop_stock")  # 停牌标记
 is_tuishi_ing = load_daily_data("stk_is_tuishi_ing")  # 退市整理标记
-st_status = (is_st + is_stop + is_tuishi_ing).filLna(1)  # ST/停牌/退市整理标记（0=正常）, 有任一为1即视为不可交易
+st_status = (is_st + is_stop + is_tuishi_ing).fillna(1)  # ST/停牌/退市整理标记（0=正常）, 有任一为1即视为不可交易
 
 cmv = load_daily_data("stk_neg_market_value") / 1e8  # 流通市值（单位：亿）
 cmv = cmv[[c for c in cmv.columns if c[0] in "036"]]  # 只保留A股
@@ -206,6 +206,7 @@ for date in date_list[150:]:  # 前150天用于60日回归窗口
     # 保存
     os.chdir(save_path)
     feat.fillna(0).to_feather(f"{date}.fea")
+    print(f"Saved {date}.fea")
     # feat.fillna(0).to_feather(f"/home/haris/share/haris/backtester/data/trade_support5/{date}.fea")
 
 print("Done:", datetime.datetime.now())

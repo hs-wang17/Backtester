@@ -96,7 +96,6 @@ jupyter notebook run.ipynb
 ### 3. 脚本运行方式
 
 ```bash
-# 直接运行Python脚本
 python /home/haris/project/backtester/scripts/run_para_ef.py
 
 # 或使用shell脚本

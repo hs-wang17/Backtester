@@ -274,6 +274,16 @@ python run.py --scores_path "/path/to/scores.csv" --trade_support 7
 python run.py --scores_path "/path/to/scores.csv" --trade_support 7 --strategy topn
 ```
 
+或者
+
+```bash
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run.sh > /home/haris/logs/backtest_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp5.sh > /home/haris/logs/backtest_para_opt_20251226.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp7.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_co.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
+screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_ef.sh > /home/haris/logs/backtest_para_ef_20260302.log 2>&1'
+```
+
 #### 多策略组合回测
 
 ```bash
@@ -311,7 +321,7 @@ screen -dmS gp_opt_5 bash -c 'bash scripts/run_para_optimizer_gp5.sh > logs/gp_o
 screen -dmS gp_opt_7 bash -c 'bash scripts/run_para_optimizer_gp7.sh > logs/gp_opt_7.log 2>&1'
 
 # 有效前沿参数优化
-screen -dmS ef_opt bash -c 'bash scripts/run_para_ef.sh > logs/ef_opt.log 2>&1'
+screen -dmS ef_opt bash -c 'bash /home/haris/project/backtester/scripts/run_para_ef.sh > /home/haris/logs/backtest_para_opt_20260129_ef.log'
 ```
 
 #### 批量回测

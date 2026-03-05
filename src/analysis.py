@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import src.config as config
 
 
 def analyse(net_value):
@@ -27,11 +28,15 @@ def analyse(net_value):
     # 相对指标
     zs_ret = net_value["zs"].pct_change().dropna()
     rel_ret = abs_ret - zs_ret
+    if config.REMOVE_ABNORMAL:
+        rel_ret.loc["20240130":"20240219"] = 0.0
     rel_mean_ret = rel_ret.mean() * 250
     rel_std_ret = rel_ret.std() * np.sqrt(250)
     rel_sharpe = rel_mean_ret / rel_std_ret if rel_std_ret > 0 else np.nan  # 信息比率
     rel_cum_ret = rel_ret.cumsum()
     rel_dd = rel_cum_ret.cummax() - rel_cum_ret
+    if config.REMOVE_ABNORMAL:
+        rel_dd.loc["20240130":"20240219"] = 0.0
     rel_max_dd = rel_dd.max()
     rel_mean_dd = rel_dd[rel_dd > 0].mean()
     rel_win_rate = (rel_ret > 0).mean()

@@ -102,7 +102,7 @@ def solve_problem(
             x >= make_param(stk_low),
             x <= make_param(stk_high),
             # selling constraints
-            cp.sum(cp.abs(x - x_last) - x + x_last) <= 2 * sell_max,
+            cp.sum(cp.abs(x - x_last) - (x - x_last)) <= 2 * sell_max,
             # total weight constraints
             cp.sum(x) <= tot_weight,
             # membership constraints

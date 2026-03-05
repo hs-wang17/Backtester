@@ -22,7 +22,7 @@ ipo_dates = (load_daily_data("stk_adjclose").replace(0, np.nan).ffill() > 0).cum
 is_st = load_daily_data("stk_is_st_stock")  # ST标记
 is_stop = load_daily_data("stk_is_stop_stock")  # 停牌标记
 is_tuishi_ing = load_daily_data("stk_is_tuishi_ing")  # 退市整理标记
-st_status = (is_st + is_stop + is_tuishi_ing).filLna(1)  # ST/停牌/退市整理标记（0=正常）, 有任一为1即视为不可交易
+st_status = (is_st + is_stop + is_tuishi_ing).fillna(1)  # ST/停牌/退市整理标记（0=正常）, 有任一为1即视为不可交易
 
 cmv = load_daily_data("stk_neg_market_value") / 1e8  # 流通市值（单位：亿）
 cmv = cmv[[c for c in cmv.columns if c[0] in "036"]]  # 只保留A股
@@ -50,7 +50,9 @@ ret20 = price.pct_change(20)  # 20日收益
 std = price.pct_change().rolling(20, min_periods=3).std()  # 20日收益波动率
 turn = (load_daily_data("stk_amount") / mv).fillna(0).rolling(20).mean()  # 20日平均换手率
 value_fac = pe.rank(ascending=False, pct=True, axis=1) + pb.rank(ascending=False, pct=True, axis=1)
-amt_increase = (amount.rolling(5, min_periods=3).mean() / amount.rolling(20, min_periods=10).mean().shift(5)).replace([np.inf, -np.inf], np.nan)
+amt_increase = (amount.rolling(5, min_periods=3).mean() / amount.rolling(20, min_periods=10).mean().shift(5)).replace(
+    [np.inf, -np.inf], np.nan
+)
 amt_perdeal = (amount / dealnum).replace([np.inf, -np.inf], np.nan)
 
 
@@ -84,7 +86,9 @@ for date in date_list[70:]:
     td_st_list = td_st[td_st == 0].index.tolist()
     td_code_list = [x for x in td_ret.index if ((x in ipo60_list) and (x in td_st_list) and (x[0] in ["0", "3", "6"]))]
 
-    td_info = pd.concat([td_ret, td_citic, td_cmvg, np.sqrt(mv.loc[last_date])], axis=1, keys=["ret", "citic", "cmvg", "w"]).reindex(td_code_list)
+    td_info = pd.concat([td_ret, td_citic, td_cmvg, np.sqrt(mv.loc[last_date])], axis=1, keys=["ret", "citic", "cmvg", "w"]).reindex(
+        td_code_list
+    )
 
     td_info["ret_w"] = td_info["ret"] * td_info["w"]
     mkt_ret = td_info["ret_w"].sum() / td_info["w"].sum()
@@ -156,7 +160,9 @@ for date in date_list[150:]:
     beta_cmvg.columns = beta_cmvg.columns.map(lambda x: "cmvg_b_" + str(int(x)))
     beta_style.columns = beta_style.columns.map(lambda x: "style_b_" + x)
 
-    td_ans = pd.concat([td_citic, td_cmvg, td_style_rank, beta_ind, beta_cmvg, beta_style], axis=1).reindex(td_code_list).astype(float)  # .reset_index()
+    td_ans = (
+        pd.concat([td_citic, td_cmvg, td_style_rank, beta_ind, beta_cmvg, beta_style], axis=1).reindex(td_code_list).astype(float)
+    )  # .reset_index()
     td_ans = td_ans.fillna(td_ans.median())
 
     ipo_num = ipo_dates.loc[date].fillna(0)

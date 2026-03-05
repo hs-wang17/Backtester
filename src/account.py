@@ -206,6 +206,13 @@ class account:
             st.sellable_vol = st.volume
         return self.cal_total()
 
+    def cal_sellable_amt(self):
+        rows = []
+        for code, st in self.hold_dict.items():
+            sellable_amt = st.sellable_vol * st.price
+            rows.append({"code": code, "sellable_amt": sellable_amt})
+        return pd.DataFrame(rows, columns=["code", "sellable_amt"])
+
     def log_trade(self, code, price, vol):
         """
         Log a trade.
@@ -342,7 +349,8 @@ class account:
             st = self.hold_dict[code]
             if st.low_price < st.price < st.up_price:
                 vol = min(
-                    round(to_buy_s[code] / st.unit_vol) * st.unit_vol, int((cash_avail + total_sell - total_buy) / (st.price * st.unit_vol)) * st.unit_vol
+                    round(to_buy_s[code] / st.unit_vol) * st.unit_vol,
+                    int((cash_avail + total_sell - total_buy) / (st.price * st.unit_vol)) * st.unit_vol,
                 )
                 if vol >= st.minimum_vol:
                     total_buy += self.buy_stk(code, vol)
@@ -371,9 +379,13 @@ class account:
             hold_df = pd.DataFrame({c: [s.volume, s.amt] for c, s in self.hold_dict.items()}).T.sort_index()
             hold_df.columns = ["volume", "amt"]
 
-        trade_df = pd.concat([pd.DataFrame(v) for v in self.trade_dict.values()], keys=self.trade_dict.keys()) if self.trade_dict else pd.DataFrame()
+        trade_df = (
+            pd.concat([pd.DataFrame(v) for v in self.trade_dict.values()], keys=self.trade_dict.keys()).reset_index(level=1, drop=True)
+            if self.trade_dict
+            else pd.DataFrame()
+        )
         if not trade_df.empty:
-            trade_df = trade_df.reset_index().iloc[:, 1:]
+            trade_df = trade_df.reset_index()
             trade_df.columns = ["code", "volume", "price", "date"]
         self.trade_dict = {}
         return hold_df, trade_df

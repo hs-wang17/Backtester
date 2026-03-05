@@ -181,11 +181,16 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     plot_df.plot(
         ax=ax_main, color=[STYLE["colors"]["strategy"], STYLE["colors"]["benchmark"], STYLE["colors"]["excess"]], linewidth=2, alpha=0.9
     )
-    main_title = (
-        f"基于{strategy}的策略回测结果 (trade_support{config.TRADE_SUPPORT})"
-        if config.STRATEGY == "solve"
-        else f"基于{strategy}的策略回测结果 (top n)"
-    )
+    if config.APM_MODE:
+        main_title = (
+            f"基于{strategy}的策略回测结果 (早午盘)" if config.STRATEGY == "solve" else f"基于{strategy}的策略回测结果 (前 N / 早午盘)"
+        )
+    else:
+        main_title = (
+            f"基于{strategy}的策略回测结果 ({"午盘" if config.AFTERNOON_START else "早盘"})"
+            if config.STRATEGY == "solve"
+            else f"基于{strategy}的策略回测结果 (前 N / {"午盘" if config.AFTERNOON_START else "早盘"})"
+        )
     beautify_axis(ax_main, main_title)
     ax_main.set_xlabel("")
     # 优化图例：放置在左上角，去除边框，使其融合
@@ -282,19 +287,34 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
         annual_data.append(row)
 
     current_y = draw_table_block(
-        fig, table_x, current_y, table_width, "分年度超额表现", annual_data, col_ratios=[0.15, 0.22, 0.22, 0.22, 0.19]
+        fig,
+        table_x,
+        current_y,
+        table_width,
+        "分年度超额表现",
+        annual_data,
+        col_ratios=[0.15, 0.22, 0.22, 0.22, 0.19],
     )
 
     current_y -= 0.05
 
     # 表格 3：回测参数配置
-    # 准备左侧数据
-    parameters_left = ["行业限制", "市值限制", "风格限制", "换手率限制"]
-    param_vals_left = [config.CITIC_LIMIT, config.CMVG_LIMIT, config.OTHER_LIMIT, config.TURN_MAX]
+    if config.APM_MODE:
+        # 准备左侧数据
+        parameters_left = ["行业限制(早盘)", "行业限制(午盘)", "市值限制", "风格限制", "成分股持仓限制"]
+        param_vals_left = [config.CITIC_LIMIT, config.CITIC_LIMIT_NOON, config.CMVG_LIMIT, config.OTHER_LIMIT, config.MEM_HOLD]
 
-    # 准备右侧数据
-    parameters_right = ["成分股持仓限制", "个股持仓限制", "个股买入比例限制", ""]
-    param_vals_right = [config.MEM_HOLD, config.STK_HOLD_LIMIT, config.STK_BUY_R, None]
+        # 准备右侧数据
+        parameters_right = ["换手率限制(早盘)", "换手率限制(午盘)", "个股持仓限制", "个股买入比例限制", ""]
+        param_vals_right = [config.TURN_MAX, config.TURN_MAX_NOON, config.STK_HOLD_LIMIT, config.STK_BUY_R, None]
+    else:
+        # 准备左侧数据
+        parameters_left = ["行业限制", "市值限制", "风格限制", "成分股持仓限制"]
+        param_vals_left = [config.CITIC_LIMIT, config.CMVG_LIMIT, config.OTHER_LIMIT, config.MEM_HOLD]
+
+        # 准备右侧数据
+        parameters_right = ["换手率限制", "个股持仓限制", "个股买入比例限制", ""]
+        param_vals_right = [config.TURN_MAX, config.STK_HOLD_LIMIT, config.STK_BUY_R, None]
 
     param_data = []
     param_data.append(["限制参数", "参数值", "限制参数", "参数值"])  # 表头
@@ -319,7 +339,15 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
         param_data.append([l_k, l_v, r_k, r_v])
 
-    current_y = draw_table_block(fig, table_x, current_y, table_width, "策略回测参数", param_data, col_ratios=[0.25, 0.25, 0.25, 0.25])
+    current_y = draw_table_block(
+        fig,
+        table_x,
+        current_y,
+        table_width,
+        f"策略回测参数 (trade_support{config.TRADE_SUPPORT})",
+        param_data,
+        col_ratios=[0.25, 0.25, 0.25, 0.25],
+    )
 
     # 页脚
     fig.text(0.95, 0.01, f"生成时间: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}", ha="right", fontsize=10, color="#999999")
@@ -327,14 +355,30 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     # ==========================================
     # 4. 保存
     # ==========================================
-    if config.STRATEGY == "solve":
-        png_path = (
-            f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
-            if strategy
-            else f"/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
-        )
+    if config.AFTERNOON_START:
+        if config.STRATEGY == "solve":
+            png_path = (
+                f"/home/haris/results/backtests/{strategy}_afternoon_trade_support{config.TRADE_SUPPORT}.png"
+                if strategy
+                else f"/home/haris/results/backtests/strategy_afternoon_trade_support{config.TRADE_SUPPORT}.png"
+            )
+        else:
+            png_path = (
+                f"/home/haris/results/backtests/{strategy}_afternoon_topn.png"
+                if strategy
+                else "/home/haris/results/backtests/strategy_afternoon_topn.png"
+            )
     else:
-        png_path = f"/home/haris/results/backtests/{strategy}_topn.png" if strategy else "/home/haris/results/backtests/strategy_topn.png"
+        if config.STRATEGY == "solve":
+            png_path = (
+                f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
+                if strategy
+                else f"/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
+            )
+        else:
+            png_path = (
+                f"/home/haris/results/backtests/{strategy}_topn.png" if strategy else "/home/haris/results/backtests/strategy_topn.png"
+            )
 
     fig.savefig(png_path, format="png", bbox_inches="tight", pad_inches=0.2, dpi=150)
     plt.close(fig)

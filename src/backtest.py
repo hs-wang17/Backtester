@@ -8,7 +8,7 @@ import src.config as config
 from src.account import account
 from src.analysis import analyse
 from src.plot import plot
-from src.strategy import solve_strategy, topn_strategy
+from src.strategy import solve_strategy, topn_strategy, record_trade
 from src.utils import get_daily_price, get_daily_support5, get_daily_support7
 
 
@@ -17,6 +17,31 @@ def load_daily_data(name):
 
 
 def run_backtest():
+    """
+    Run backtest on the given dataset.
+
+    Parameters
+    ----------
+    INITIAL_MONEY : float
+        The initial amount of money used for backtesting.
+    STK_HOLD_LIMIT : float
+        The limit of holding stock.
+    STK_BUY_R : float
+        The rate of buying stock.
+    TURN_MAX : float
+        The maximum rate of buying stock.
+    CITIC_LIMIT : float
+        The limit of CITIC.
+    CMVG_LIMIT : float
+        The limit of CMVG.
+    OTHER_LIMIT : float
+        The limit of other style metrics.
+
+    Returns
+    -------
+    A dictionary containing the backtesting result.
+    """
+
     high_limit = load_daily_data("stk_ztprice").replace(0, np.nan).ffill()
     low_limit = load_daily_data("stk_dtprice").replace(0, np.nan).ffill()
     pre_close = load_daily_data("stk_preclose").replace(0, np.nan).ffill()
@@ -46,35 +71,11 @@ def run_backtest():
         scores.append(scores_single)
         index_sets.append(set(scores_single.index))
         col_sets.append(set(scores_single.columns))
-    common_dates = sorted(set.intersection(*index_sets))
+    common_dates = sorted(set.intersection(*index_sets) & set(vwap_df.index.astype(str)))  # apply date filter with vwap_df
     common_cols = sorted(set.intersection(*col_sets))
     scores = [df.loc[common_dates, common_cols] for df in scores]
     date_list = common_dates[config.START_DATE_SHIFT :]  # apply start date shift
 
-    """
-    Run backtest on the given dataset.
-
-    Parameters
-    ----------
-    INITIAL_MONEY : float
-        The initial amount of money used for backtesting.
-    STK_HOLD_LIMIT : float
-        The limit of holding stock.
-    STK_BUY_R : float
-        The rate of buying stock.
-    TURN_MAX : float
-        The maximum rate of buying stock.
-    CITIC_LIMIT : float
-        The limit of CITIC.
-    CMVG_LIMIT : float
-        The limit of CMVG.
-    OTHER_LIMIT : float
-        The limit of other style metrics.
-
-    Returns
-    -------
-    A dictionary containing the backtesting result.
-    """
     s = account(config.INITIAL_MONEY)
     s.cal_total()
 
@@ -86,17 +87,7 @@ def run_backtest():
     trade_df_dict = {}  # save each day's trade
     hold_style_dict = {}  # save each day's holding style diff
 
-    if config.AFTERNOON_START:
-        start_idx = 1
-    else:
-        start_idx = 0
-    for idx_date in tqdm(range(start_idx, len(date_list)), desc="Backtesting"):
-        date = date_list[idx_date]
-        if config.AFTERNOON_START:
-            support_date = date_list[idx_date - 1]
-        else:
-            support_date = date
-
+    for date in tqdm(date_list, desc="Backtesting"):
         # get daily data
         td_open, td_close, td_preclose, td_adj, td_score, td_upper, td_lower, last_zt = get_daily_price(
             str(date), vwap_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df
@@ -104,9 +95,9 @@ def run_backtest():
 
         # get daily support data
         if config.TRADE_SUPPORT == 5:
-            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(support_date))
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(date))
         else:
-            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(support_date))
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(date))
 
         # get today's tradable and zt stocks
         code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
@@ -145,18 +136,9 @@ def run_backtest():
             to_buy_s, to_sell_s = topn_strategy(s, act, code_list, code_list_all, code_list_zt, td_score, td_preclose)
 
         # execute trades
-        s.fresh_price(td_open.to_dict())
-        buy_amt, sell_amt = s.daily_trade(s.cash, to_buy_s, to_sell_s)
-        s.fresh_price(td_close.to_dict())
-
-        # refresh after market close
-        act_s[date] = s.cal_total()
-        cash_s[date] = s.cash
-        buy_s[date] = buy_amt
-        sell_s[date] = sell_amt
-        hold_df, trade_df = s.close_today()
-        hold_df_dict[date] = hold_df
-        trade_df_dict[date] = trade_df
+        hold_df, _ = record_trade(
+            s, td_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "", td_close
+        )
 
         # calculate holding style difference
         hold_weight = hold_df["amt"] / hold_df["amt"].sum()
@@ -182,16 +164,20 @@ def run_backtest():
 
     # aggregate results
     total_s = pd.concat(
-        [pd.Series(act_s), pd.Series(cash_s), pd.Series(buy_s), pd.Series(sell_s)],
+        [pd.Series(act_s), pd.Series(cash_s)],
         axis=1,
-        keys=["total_act", "cash", "buy_amt", "sell_amt"],
+        keys=["total_act", "cash"],
     )
     nv = pd.concat([zs_day.reindex(total_s.index), total_s["total_act"]], axis=1, keys=["zs", "strategy"])
     nv = nv / nv.iloc[0]
     hold_style = pd.DataFrame(hold_style_dict).T
     info, nv, rel_nv = analyse(nv)
 
+    # save relative net value results
+    rel_nv.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_rel_nv.csv", index_label="date")
+
     if config.PLOT:
+        # PLOT=True: use for backtest analysis and visualization, save daily holding data to a CSV file
         # combine all daily hold_df into a single DataFrame with date information
         all_hold_df = pd.DataFrame()
         for date, daily_hold_df in hold_df_dict.items():
@@ -199,15 +185,25 @@ def run_backtest():
             daily_hold_df_copy["date"] = date
             all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
 
-        if config.STRATEGY == "solve":
-            all_hold_df.to_csv(
-                config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code"
-            )
-        elif config.STRATEGY == "topn":
-            all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_topn_hold_df.csv", index_label="code")
+        if config.AFTERNOON_START:
+            if config.STRATEGY == "solve":
+                all_hold_df.to_csv(
+                    config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_afternoon_trade_support{config.TRADE_SUPPORT}_hold_df.csv",
+                    index_label="code",
+                )
+            elif config.STRATEGY == "topn":
+                all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_afternoon_topn_hold_df.csv", index_label="code")
+        else:
+            if config.STRATEGY == "solve":
+                all_hold_df.to_csv(
+                    config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code"
+                )
+            elif config.STRATEGY == "topn":
+                all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_topn_hold_df.csv", index_label="code")
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     else:
+        # PLOT=False: use for parameter optimization (efficient frontier), save results to a unified JSON file
         json_path = f"/home/haris/project/backtester/para_optimizer_ef/scores/{config.PARA_NAME}.json"
 
         new_entry = {
@@ -239,3 +235,5 @@ def run_backtest():
             json.dump(all_data, f, indent=4, ensure_ascii=False)
 
         print(f"本次回测已追加至统一文件，当前总记录数: {len(all_data)}")
+
+        return info

@@ -6,7 +6,7 @@ import argparse
 
 PYTHON_EXE = "/home/haris/miniconda3/envs/myenv/bin/python"
 RUN_SCRIPT = "/home/haris/project/backtester/run.py"
-SCORES_PATH = "/home/haris/results/predictions/model_re_20251128.csv"
+SCORES_PATH = "/home/haris/mymodel/predictions/StockPredictor_20251231_merged_all_stocks_until_20250630.csv"
 
 
 def run_backtests(json_path):
@@ -66,5 +66,4 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     run_backtests(args.json_path)
-
     print("所有参数执行完成")
