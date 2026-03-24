@@ -216,3 +216,37 @@ def get_daily_support7(str_date):
         zz_style = df.loc["idx_" + config.IDX_NAME, style.columns]
         data_cache["daily_support"][str_date] = (citic, cmvg, mem, zz_citic, zz_cmvg, style, zz_style, sub_code)
     return data_cache["daily_support"][str_date]
+
+
+def get_daily_support_barra(str_date):
+    """
+    Get the daily support data for a given date.
+
+    Parameters
+    ----------
+    str_date : str
+        The date for which to retrieve the daily support data.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the daily support data for the given date.
+    """
+    if str_date not in data_cache["daily_support"]:
+        os.chdir(config.SUPPORTBARRA_PATH)
+        support_dates = sorted(os.listdir(config.SUPPORTBARRA_PATH))
+        last_date = [x for x in support_dates if x[:8] < str_date[:8]][-1]
+        df = pd.read_feather(last_date)
+        # ignore the stocks listed within 120 days (ipo) and ST stocks
+        sub_code = df.loc[(df["ipo_dates"] > 120) & (df["st"] == 0)].index.tolist()
+        # ignore the stocks in 036 market (B stock, ST stock, etc.)
+        sub_code = [c for c in sub_code if c[0] in "036"]
+        citic = df[[c for c in df.columns if "citic_r_" in c]].reindex(sub_code).fillna(0)
+        cmvg = df[[c for c in df.columns if "cmvg_r_" in c]].reindex(sub_code).fillna(0)
+        style = df[[c for c in df.columns if "style_r_" in c]].reindex(sub_code).fillna(0)
+        mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        zz_citic = df.loc["idx_" + config.IDX_NAME, citic.columns]
+        zz_cmvg = df.loc["idx_" + config.IDX_NAME, cmvg.columns]
+        zz_style = df.loc["idx_" + config.IDX_NAME, style.columns]
+        data_cache["daily_support"][str_date] = (citic, cmvg, mem, zz_citic, zz_cmvg, style, zz_style, sub_code)
+    return data_cache["daily_support"][str_date]

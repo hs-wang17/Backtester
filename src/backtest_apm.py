@@ -9,7 +9,7 @@ from src.account import account
 from src.analysis import analyse
 from src.plot import plot
 from src.strategy import solve_strategy, solve_strategy_noon, topn_strategy, record_trade
-from src.utils import get_daily_price_apm, get_daily_support5, get_daily_support7
+from src.utils import get_daily_price_apm, get_daily_support5, get_daily_support7, get_daily_support_barra
 
 
 def load_daily_data(name):
@@ -60,6 +60,7 @@ def run_backtest_apm():
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
     vwap_am_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
     vwap_pm_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
+    # vwap_pm_df = pd.read_feather("/home/haris/project/backtester/data/vwap_noon.fea")
 
     index_sets, col_sets = [], []
 
@@ -102,8 +103,10 @@ def run_backtest_apm():
         # get daily support data
         if config.TRADE_SUPPORT == 5:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(date))
-        else:
+        elif config.TRADE_SUPPORT == 7:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(date))
+        else:
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support_barra(str(date))
 
         # get today's tradable and zt stocks
         code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks

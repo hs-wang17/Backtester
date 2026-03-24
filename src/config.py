@@ -3,11 +3,12 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # data paths
-DATA_PATH = r"/home/haris/project/backtester/data"  # 回测数据输入
+DATA_PATH = r"/home/haris/data/trade_support_data"  # 回测数据输入
 TEST_RESULT_PATH = r"/home/haris/project/backtester/results"  # 回测结果输出
 DAILY_DATA_PATH = r"/home/haris/data/data_frames"  # 日频基础数据
 SUPPORT5_PATH = r"/home/haris/data/trade_support_data/trade_support5"  # trade_support5特征
 SUPPORT7_PATH = r"/home/haris/data/trade_support_data/trade_support7"  # trade_support7特征
+SUPPORTBARRA_PATH = r"/home/haris/data/trade_support_data/trade_support_barra"  # trade_support_barra特征
 SCORES_PATH = r"/home/haris/mymodel/predictions/StockPredictor_20251231_merged.csv"  # 早盘因子预测文件
 NOON_SCORES_PATH = r"/home/haris/mymodel_noon/predictions/StockPredictor_20260302_merged.csv"  # 午盘因子预测文件
 HOLD_DF_PATH = r"/home/haris/results/backtests/"  # 输出持仓文件
@@ -16,6 +17,7 @@ STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]  # 打分名�
 PLOT = True  # 是否绘制回测结果
 AFTERNOON_START = True  # 是否为午盘交易模式
 APM_MODE = False  # 是否为早午盘交易模式
+CALL_START = False  # 是否为集合竞价模式
 PARA_NAME = "20251231_trade_support7"  # 参数文件
 SOLVER_METHOD = "basic"  # 组合优化方法(单阶段/两阶段)
 STRATEGY = "solve"  # 选股策略(组合优化/topn)
@@ -63,7 +65,7 @@ def update_from_args(args):
     """Update configuration from command line arguments."""
     global SCORES_PATH, NOON_SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
     global CITIC_LIMIT, CMVG_LIMIT, CITIC_LIMIT_NOON, STK_HOLD_LIMIT, OTHER_LIMIT, STK_BUY_R, TURN_MAX, TURN_MAX_NOON, MEM_HOLD
-    global PLOT, AFTERNOON_START, APM_MODE, PARA_NAME, SOLVER_METHOD, STRATEGY
+    global PLOT, AFTERNOON_START, APM_MODE, CALL_START, PARA_NAME, SOLVER_METHOD, STRATEGY
     global TOT_HOLD_NUM, DAILY_SELL_NUM, HOLD_INIT, START_DATE_SHIFT, LAMBDA_SPARSE
     global N_CALLS, N_RANDOM_STARTS, REMOVE_ABNORMAL
 
@@ -140,6 +142,17 @@ def update_from_args(args):
             TURN_MAX_NOON = 0.06371569969647878  # 换手率(午盘) (范围0.03-0.2)
             MEM_HOLD = 0.0  # 成份股持仓 (范围0-0.4)
 
+    elif TRADE_SUPPORT == 8:
+        CITIC_LIMIT = 0.0  # 行业 (范围0-0.5)
+        CITIC_LIMIT_NOON = 0.0  # 行业(午盘) (范围0-0.5)
+        CMVG_LIMIT = 0.24  # 市值 (范围0-0.5)
+        STK_HOLD_LIMIT = 0.01  # 个股持仓 (范围0-0.02)
+        OTHER_LIMIT = 0.4  # 风格 (范围0-0.5)
+        STK_BUY_R = 0.015  # 个股买入比例 (范围0.001-0.02)
+        TURN_MAX = 0.04  # 换手率 (范围0.03-0.2)
+        TURN_MAX_NOON = 0.04  # 换手率(午盘) (范围0.03-0.2)
+        MEM_HOLD = 0.1  # 成份股持仓 (范围0-0.4)
+
     if hasattr(args, "citic_limit") and args.citic_limit is not None:
         CITIC_LIMIT = args.citic_limit
     if hasattr(args, "citic_limit_noon") and args.citic_limit_noon is not None:
@@ -165,6 +178,8 @@ def update_from_args(args):
         AFTERNOON_START = args.afternoon_start
     if hasattr(args, "apm_mode") and args.apm_mode is not None:
         APM_MODE = args.apm_mode
+    if hasattr(args, "call_start") and args.call_start is not None:
+        CALL_START = args.call_start
     if hasattr(args, "para_name") and args.para_name is not None:
         PARA_NAME = args.para_name
     if hasattr(args, "solver_method") and args.solver_method is not None:

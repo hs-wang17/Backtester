@@ -186,11 +186,20 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
             f"基于{strategy}的策略回测结果 (早午盘)" if config.STRATEGY == "solve" else f"基于{strategy}的策略回测结果 (前 N / 早午盘)"
         )
     else:
-        main_title = (
-            f"基于{strategy}的策略回测结果 ({"午盘" if config.AFTERNOON_START else "早盘"})"
-            if config.STRATEGY == "solve"
-            else f"基于{strategy}的策略回测结果 (前 N / {"午盘" if config.AFTERNOON_START else "早盘"})"
-        )
+        if config.AFTERNOON_START:
+            main_title = (
+                f"基于{strategy}的策略回测结果 (午盘)" if config.STRATEGY == "solve" else f"基于{strategy}的策略回测结果 (前 N / 午盘)"
+            )
+        elif config.CALL_START:
+            main_title = (
+                f"基于{strategy}的策略回测结果 (集合竞价)"
+                if config.STRATEGY == "solve"
+                else f"基于{strategy}的策略回测结果 (前 N / 集合竞价)"
+            )
+        else:
+            main_title = (
+                f"基于{strategy}的策略回测结果 (早盘)" if config.STRATEGY == "solve" else f"基于{strategy}的策略回测结果 (前 N / 早盘)"
+            )
     beautify_axis(ax_main, main_title)
     ax_main.set_xlabel("")
     # 优化图例：放置在左上角，去除边框，使其融合
@@ -356,29 +365,24 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     # 4. 保存
     # ==========================================
     if config.AFTERNOON_START:
-        if config.STRATEGY == "solve":
-            png_path = (
-                f"/home/haris/results/backtests/{strategy}_afternoon_trade_support{config.TRADE_SUPPORT}.png"
-                if strategy
-                else f"/home/haris/results/backtests/strategy_afternoon_trade_support{config.TRADE_SUPPORT}.png"
-            )
-        else:
-            png_path = (
-                f"/home/haris/results/backtests/{strategy}_afternoon_topn.png"
-                if strategy
-                else "/home/haris/results/backtests/strategy_afternoon_topn.png"
-            )
+        file_name_suffix = "_afternoon"
+    elif config.CALL_START:
+        file_name_suffix = "_call"
     else:
-        if config.STRATEGY == "solve":
-            png_path = (
-                f"/home/haris/results/backtests/{strategy}_trade_support{config.TRADE_SUPPORT}.png"
-                if strategy
-                else f"/home/haris/results/backtests/strategy_trade_support{config.TRADE_SUPPORT}.png"
-            )
-        else:
-            png_path = (
-                f"/home/haris/results/backtests/{strategy}_topn.png" if strategy else "/home/haris/results/backtests/strategy_topn.png"
-            )
+        file_name_suffix = ""
+
+    if config.STRATEGY == "solve":
+        png_path = (
+            f"/home/haris/results/backtests/{strategy}" + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}.png"
+            if strategy
+            else f"/home/haris/results/backtests/strategy" + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}.png"
+        )
+    else:
+        png_path = (
+            f"/home/haris/results/backtests/{strategy}" + file_name_suffix + f"_topn.png"
+            if strategy
+            else f"/home/haris/results/backtests/strategy" + file_name_suffix + f"_topn.png"
+        )
 
     fig.savefig(png_path, format="png", bbox_inches="tight", pad_inches=0.2, dpi=150)
     plt.close(fig)

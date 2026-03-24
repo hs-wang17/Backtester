@@ -18,6 +18,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--afternoon_start", type=str2bool, default=False, help="Afternoon start")
     parser.add_argument("--apm_mode", type=str2bool, default=False, help="APM mode")
+    parser.add_argument("--call_start", type=str2bool, default=False, help="Call start")
     parser.add_argument("--citic_limit", type=float, default=None, help="Citic limit")
     parser.add_argument("--citic_limit_noon", type=float, default=None, help="Citic limit for noon trading")
     parser.add_argument("--cmvg_limit", type=float, default=None, help="Cmvg limit")

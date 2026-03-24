@@ -9,7 +9,7 @@ from src.account import account
 from src.analysis import analyse
 from src.plot import plot
 from src.strategy import solve_strategy, topn_strategy, record_trade
-from src.utils import get_daily_price, get_daily_support5, get_daily_support7
+from src.utils import get_daily_price, get_daily_support5, get_daily_support7, get_daily_support_barra
 
 
 def load_daily_data(name):
@@ -56,12 +56,13 @@ def run_backtest():
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
     if config.AFTERNOON_START:
         vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
+        vwap_df = pd.read_feather("/home/haris/project/backtester/data/vwap_noon.fea")
     else:
         vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
 
     scores, index_sets, col_sets = [], [], []
     for path in config.SCORES_PATH:
-        if config.AFTERNOON_START:
+        if config.AFTERNOON_START or config.CALL_START:
             scores_single = pd.read_csv(path, index_col=0).T.sort_index().dropna(how="all")
         else:
             scores_single = pd.read_csv(path, index_col=0).T.sort_index().shift(1).dropna(how="all")
@@ -96,8 +97,10 @@ def run_backtest():
         # get daily support data
         if config.TRADE_SUPPORT == 5:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(date))
-        else:
+        elif config.TRADE_SUPPORT == 7:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(date))
+        else:
+            td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support_barra(str(date))
 
         # get today's tradable and zt stocks
         code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
@@ -173,9 +176,6 @@ def run_backtest():
     hold_style = pd.DataFrame(hold_style_dict).T
     info, nv, rel_nv = analyse(nv)
 
-    # save relative net value results
-    rel_nv.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_rel_nv.csv", index_label="date")
-
     if config.PLOT:
         # PLOT=True: use for backtest analysis and visualization, save daily holding data to a CSV file
         # combine all daily hold_df into a single DataFrame with date information
@@ -186,20 +186,24 @@ def run_backtest():
             all_hold_df = pd.concat([all_hold_df, daily_hold_df_copy], ignore_index=False)
 
         if config.AFTERNOON_START:
-            if config.STRATEGY == "solve":
-                all_hold_df.to_csv(
-                    config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_afternoon_trade_support{config.TRADE_SUPPORT}_hold_df.csv",
-                    index_label="code",
-                )
-            elif config.STRATEGY == "topn":
-                all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_afternoon_topn_hold_df.csv", index_label="code")
+            file_name_suffix = "_afternoon"
+        elif config.CALL_START:
+            file_name_suffix = "_call"
         else:
-            if config.STRATEGY == "solve":
-                all_hold_df.to_csv(
-                    config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code"
-                )
-            elif config.STRATEGY == "topn":
-                all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + f"_topn_hold_df.csv", index_label="code")
+            file_name_suffix = ""
+
+        rel_nv.to_csv(
+            config.HOLD_DF_PATH + config.STRATEGY_NAME + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}_rel_nv.csv",
+            index_label="date",
+        )
+        if config.STRATEGY == "solve":
+            all_hold_df.to_csv(
+                config.HOLD_DF_PATH + config.STRATEGY_NAME + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv",
+                index_label="code",
+            )
+        elif config.STRATEGY == "topn":
+            all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + file_name_suffix + f"_topn_hold_df.csv", index_label="code")
+
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     else:
