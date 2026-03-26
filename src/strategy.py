@@ -68,7 +68,11 @@ def solve_strategy(
                     method=config.SOLVER_METHOD,
                 )
                 last_hold_inits.append(last_hold_init)
-            last_hold_init = pd.concat(last_hold_inits, axis=1).mean(axis=1)
+            # last_hold_init = pd.concat(last_hold_inits, axis=1).mean(axis=1)
+            if len(last_hold_inits) == 1:
+                last_hold_init = last_hold_inits[0]
+            else:
+                last_hold_init = last_hold_inits[0] * config.MIX_COEFFICIENT + last_hold_inits[1] * (1 - config.MIX_COEFFICIENT)
 
         last_hold = last_hold_init
     else:
@@ -193,8 +197,11 @@ def solve_strategy(
                         method=config.SOLVER_METHOD,
                     )
                     last_hold_inits.append(last_hold_init)
-                last_hold_init = pd.concat(last_hold_inits, axis=1).mean(axis=1)
-
+                # last_hold_init = pd.concat(last_hold_inits, axis=1).mean(axis=1)
+                if len(last_hold_inits) == 1:
+                    last_hold_init = last_hold_inits[0]
+                else:
+                    last_hold_init = last_hold_inits[0] * config.MIX_COEFFICIENT + last_hold_inits[1] * (1 - config.MIX_COEFFICIENT)
             tgt_hold = act * (last_hold * (1 - config.TURN_MAX) + last_hold_init * config.TURN_MAX)
 
     # get to buy and to sell series
@@ -371,8 +378,11 @@ def solve_strategy_noon(
                         method=config.SOLVER_METHOD,
                     )
                     last_hold_inits.append(last_hold_init)
-                last_hold_init = pd.concat(last_hold_inits, axis=1).mean(axis=1)
-
+                # last_hold_init = pd.concat(last_hold_inits, axis=1).mean(axis=1)
+                if len(last_hold_inits) == 1:
+                    last_hold_init = last_hold_inits[0]
+                else:
+                    last_hold_init = last_hold_inits[0] * config.MIX_COEFFICIENT + last_hold_inits[1] * (1 - config.MIX_COEFFICIENT)
             tgt_hold = act * (last_hold * (1 - config.TURN_MAX_NOON) + last_hold_init * config.TURN_MAX_NOON)
 
     # get to buy and to sell series

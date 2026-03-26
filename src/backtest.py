@@ -56,7 +56,6 @@ def run_backtest():
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
     if config.AFTERNOON_START:
         vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
-        vwap_df = pd.read_feather("/home/haris/project/backtester/data/vwap_noon.fea")
     else:
         vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
 
@@ -193,16 +192,16 @@ def run_backtest():
             file_name_suffix = ""
 
         rel_nv.to_csv(
-            config.HOLD_DF_PATH + config.STRATEGY_NAME + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}_rel_nv.csv",
+            config.RESULT_PATH + "/" + config.STRATEGY_NAME + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}_rel_nv.csv",
             index_label="date",
         )
         if config.STRATEGY == "solve":
             all_hold_df.to_csv(
-                config.HOLD_DF_PATH + config.STRATEGY_NAME + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv",
+                config.RESULT_PATH + "/" + config.STRATEGY_NAME + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv",
                 index_label="code",
             )
         elif config.STRATEGY == "topn":
-            all_hold_df.to_csv(config.HOLD_DF_PATH + config.STRATEGY_NAME + file_name_suffix + f"_topn_hold_df.csv", index_label="code")
+            all_hold_df.to_csv(config.RESULT_PATH + "/" + config.STRATEGY_NAME + file_name_suffix + f"_topn_hold_df.csv", index_label="code")
 
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 

@@ -4,7 +4,7 @@
 # 1-1) solve trade support 5 (morning)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260309.csv --trade_support 5
 # 1-2) solve trade support 7 (morning)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260318.csv --trade_support 7
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_10/predictions/StockPredictor_20260306/predictions_period_20260324_10.csv --trade_support 7
 # 1-3) solve trade support barra (morning)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260318.csv --trade_support 8
 # 1-4) topn (morning)
@@ -32,4 +32,4 @@
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260312.csv --trade_support 8 --call_start True
 
 # multiple scores
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel/predictions/StockPredictor_20251231_merged.csv,/home/haris/results/predictions/StockPredictor_20260306.csv --trade_support 7
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel/predictions/StockPredictor_20251231_merged.csv,/home/haris/mymodel_10/predictions/StockPredictor_20260306_merged.csv --trade_support 7 --mix_coefficient 0.0

@@ -373,15 +373,15 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     if config.STRATEGY == "solve":
         png_path = (
-            f"/home/haris/results/backtests/{strategy}" + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}.png"
+            f"{config.RESULT_PATH}/{strategy}" + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}.png"
             if strategy
-            else f"/home/haris/results/backtests/strategy" + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}.png"
+            else f"{config.RESULT_PATH}/strategy" + file_name_suffix + f"_trade_support{config.TRADE_SUPPORT}.png"
         )
     else:
         png_path = (
-            f"/home/haris/results/backtests/{strategy}" + file_name_suffix + f"_topn.png"
+            f"{config.RESULT_PATH}/{config.STRATEGY_NAME}/{strategy}" + file_name_suffix + f"_topn.png"
             if strategy
-            else f"/home/haris/results/backtests/strategy" + file_name_suffix + f"_topn.png"
+            else f"{config.RESULT_PATH}/{config.STRATEGY_NAME}/strategy" + file_name_suffix + f"_topn.png"
         )
 
     fig.savefig(png_path, format="png", bbox_inches="tight", pad_inches=0.2, dpi=150)

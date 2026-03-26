@@ -4,14 +4,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # data paths
 DATA_PATH = r"/home/haris/data/trade_support_data"  # 回测数据输入
-TEST_RESULT_PATH = r"/home/haris/project/backtester/results"  # 回测结果输出
+RESULT_PATH = r"/home/haris/results/backtests"  # 回测结果输出
 DAILY_DATA_PATH = r"/home/haris/data/data_frames"  # 日频基础数据
 SUPPORT5_PATH = r"/home/haris/data/trade_support_data/trade_support5"  # trade_support5特征
 SUPPORT7_PATH = r"/home/haris/data/trade_support_data/trade_support7"  # trade_support7特征
 SUPPORTBARRA_PATH = r"/home/haris/data/trade_support_data/trade_support_barra"  # trade_support_barra特征
 SCORES_PATH = r"/home/haris/mymodel/predictions/StockPredictor_20251231_merged.csv"  # 早盘因子预测文件
 NOON_SCORES_PATH = r"/home/haris/mymodel_noon/predictions/StockPredictor_20260302_merged.csv"  # 午盘因子预测文件
-HOLD_DF_PATH = r"/home/haris/results/backtests/"  # 输出持仓文件
 
 STRATEGY_NAME = os.path.splitext(os.path.basename(SCORES_PATH))[0]  # 打分名称
 PLOT = True  # 是否绘制回测结果
@@ -29,6 +28,7 @@ LAMBDA_SPARSE = 0.0  # 稀疏化系数
 N_CALLS = 200  # 高斯过程优化调用次数
 N_RANDOM_STARTS = 100  # 高斯过程优化随机起始点次数
 REMOVE_ABNORMAL = False  # 是否剔除异常数据
+MIX_COEFFICIENT = 1.0  # 多打分策略集成混合系数
 
 # index settings
 IDX_NAME = "zz1000"
@@ -63,11 +63,17 @@ MEM_HOLD = 0.2  # 成分股持仓
 
 def update_from_args(args):
     """Update configuration from command line arguments."""
-    global SCORES_PATH, NOON_SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
+    global RESULT_PATH, SCORES_PATH, NOON_SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
     global CITIC_LIMIT, CMVG_LIMIT, CITIC_LIMIT_NOON, STK_HOLD_LIMIT, OTHER_LIMIT, STK_BUY_R, TURN_MAX, TURN_MAX_NOON, MEM_HOLD
     global PLOT, AFTERNOON_START, APM_MODE, CALL_START, PARA_NAME, SOLVER_METHOD, STRATEGY
     global TOT_HOLD_NUM, DAILY_SELL_NUM, HOLD_INIT, START_DATE_SHIFT, LAMBDA_SPARSE
-    global N_CALLS, N_RANDOM_STARTS, REMOVE_ABNORMAL
+    global N_CALLS, N_RANDOM_STARTS, REMOVE_ABNORMAL, MIX_COEFFICIENT
+    
+    if hasattr(args, "mix_coefficient") and args.mix_coefficient is not None:
+        MIX_COEFFICIENT = args.mix_coefficient
+        
+    if hasattr(args, "results_path") and args.results_path:
+        RESULT_PATH = args.results_path
 
     if hasattr(args, "scores_path") and args.scores_path:
         if "," in args.scores_path:
@@ -77,7 +83,7 @@ def update_from_args(args):
                 if hasattr(args, "noon_scores_path") and args.noon_scores_path
                 else []
             )
-            STRATEGY_NAME = "+".join(os.path.splitext(os.path.basename(p))[0] for p in SCORES_PATH + NOON_SCORES_PATH)
+            STRATEGY_NAME = "+".join(os.path.splitext(os.path.basename(p))[0] for p in SCORES_PATH + NOON_SCORES_PATH) + f"_mix{MIX_COEFFICIENT:.1f}"
         else:
             SCORES_PATH = [args.scores_path]
             if hasattr(args, "noon_scores_path") and args.noon_scores_path:
