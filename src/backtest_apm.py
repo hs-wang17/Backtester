@@ -107,6 +107,16 @@ def run_backtest_apm():
         else:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support_barra(str(date))
 
+        mem_hs300, mem_zz500, mem_zz1000, mem_zz2000 = td_mem
+        if config.IDX_NAME == "hs300":
+            td_mem = mem_hs300
+        elif config.IDX_NAME == "zz500":
+            td_mem = mem_zz500
+        elif config.IDX_NAME == "zz1000":
+            td_mem = mem_zz1000
+        elif config.IDX_NAME == "zz2000":
+            td_mem = mem_zz2000
+            
         # get today's tradable and zt stocks
         code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
         code_list = [
@@ -123,27 +133,29 @@ def run_backtest_apm():
         # refresh before market open
         act = s.refresh_open(td_upper, td_lower, td_preclose.to_dict(), td_adj)
 
+        # prepare params dictionary
+        params = {
+            'code_list': code_list,
+            'code_list_all': code_list_all,
+            'zt_codes': zt_codes,
+            'code_list_zt': code_list_zt,
+            'td_score': td_score,
+            'td_mem': td_mem,
+            'stk_perm': stk_perm,
+            'td_citic': td_citic,
+            'zz_citic': zz_citic,
+            'td_cmvg': td_cmvg,
+            'zz_cmvg': zz_cmvg,
+            'style_fac': style_fac,
+            'zz_style': zz_style,
+            'td_preclose': td_preclose,
+        }
+        
         # strategy
         if config.STRATEGY == "solve":
-            to_buy_s, to_sell_s = solve_strategy(
-                s,
-                act,
-                code_list,
-                code_list_all,
-                zt_codes,
-                td_score,
-                td_mem,
-                stk_perm,
-                td_citic,
-                zz_citic,
-                td_cmvg,
-                zz_cmvg,
-                style_fac,
-                zz_style,
-                td_preclose,
-            )
+            to_buy_s, to_sell_s = solve_strategy(s, act, **params)
         elif config.STRATEGY == "topn":
-            to_buy_s, to_sell_s = topn_strategy(s, act, code_list, code_list_all, code_list_zt, td_score, td_preclose)
+            to_buy_s, to_sell_s = topn_strategy(s, act, **params)
 
         # execute trades
         hold_df, sellable_amt = record_trade(
@@ -154,29 +166,30 @@ def run_backtest_apm():
 
         # refresh before market open
         act = s.cal_total()
+        
+        # prepare params dictionary
+        params = {
+            'code_list': code_list,
+            'code_list_all': code_list_all,
+            'zt_codes': zt_codes,
+            'code_list_zt': code_list_zt,
+            'td_score': td_score,
+            'td_mem': td_mem,
+            'stk_perm': stk_perm,
+            'td_citic': td_citic,
+            'zz_citic': zz_citic,
+            'td_cmvg': td_cmvg,
+            'zz_cmvg': zz_cmvg,
+            'style_fac': style_fac,
+            'zz_style': zz_style,
+            'td_preclose': td_preclose,
+        }
 
         # strategy
         if config.STRATEGY == "solve":
-            to_buy_s, to_sell_s = solve_strategy_noon(
-                s,
-                act,
-                sellable_amt,
-                code_list,
-                code_list_all,
-                zt_codes,
-                td_score_noon,
-                td_mem,
-                stk_perm,
-                td_citic,
-                zz_citic,
-                td_cmvg,
-                zz_cmvg,
-                style_fac,
-                zz_style,
-                td_preclose,
-            )
+            to_buy_s, to_sell_s = solve_strategy_noon(s, act, sellable_amt, **params)
         elif config.STRATEGY == "topn":
-            to_buy_s, to_sell_s = topn_strategy(s, act, code_list, code_list_all, code_list_zt, td_score_noon, td_preclose)
+            to_buy_s, to_sell_s = topn_strategy(s, act, **params)
 
         # execute trades
         hold_df, sellable_amt = record_trade(
@@ -200,7 +213,11 @@ def run_backtest_apm():
         td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic  # 行业偏离
         td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg  # 市值偏离
         td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style  # 风格偏离
-        td_mem_hold = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
+        # td_mem_hold = hold_weight.reindex(td_mem[td_mem > 0].index).fillna(0).sum()
+        td_mem_hs300_hold = hold_weight.reindex(mem_hs300[mem_hs300 > 0].index).fillna(0).sum()
+        td_mem_zz500_hold = hold_weight.reindex(mem_zz500[mem_zz500 > 0].index).fillna(0).sum()
+        td_mem_zz1000_hold = hold_weight.reindex(mem_zz1000[mem_zz1000 > 0].index).fillna(0).sum()
+        td_mem_zz2000_hold = hold_weight.reindex(mem_zz2000[mem_zz2000 > 0].index).fillna(0).sum()
         td_hold_num = len(hold_weight)
         td_turnover = (buy_s[date + "am"] + sell_s[date + "am"] + buy_s[date + "pm"] + sell_s[date + "pm"]) / act_s[date] * 0.5
         if isinstance(td_score, list):
@@ -211,7 +228,11 @@ def run_backtest_apm():
             amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
 
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
-        td_diff["mem_hold"] = td_mem_hold
+        # td_diff["mem_hold"] = td_mem_hold
+        td_diff["mem_hs300_hold"] = td_mem_hs300_hold
+        td_diff["mem_zz500_hold"] = td_mem_zz500_hold
+        td_diff["mem_zz1000_hold"] = td_mem_zz1000_hold
+        td_diff["mem_zz2000_hold"] = td_mem_zz2000_hold
         td_diff["hold_num"] = td_hold_num
         td_diff["turnover"] = td_turnover
         td_diff["amt_weighted_rank"] = amt_weighted_rank

@@ -22,7 +22,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     style_cols = [c for c in hold_style.columns if "style" in c]
 
     hold_num_col = "hold_num"
-    mem_hold_col = "mem_hold"
+    mem_hold_col = ["mem_hs300_hold", "mem_zz500_hold", "mem_zz1000_hold", "mem_zz2000_hold"]
     turnover_col = "turnover"
     amt_weighted_rank_col = "amt_weighted_rank"
 
@@ -235,25 +235,32 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     beautify_axis(ax_holdnum, "持股数量 / 市值加权排名", fontsize=STYLE["font_size"]["subtitle"])
     ax_holdnum.tick_params(axis="x", labelrotation=30)
 
-    # 4. 次图：风格偏离
-    ax_style = fig.add_subplot(gs[2, 0])
-    if not hold_style[style_cols].empty:
-        colors = plt.cm.tab10(np.linspace(0, 1, len(style_cols)))
-        hold_style[style_cols].plot(ax=ax_style, color=colors, linewidth=1.5, alpha=0.8)
-    beautify_axis(ax_style, "风格偏离", fontsize=STYLE["font_size"]["subtitle"])
-    ax_style.tick_params(axis="x", labelrotation=30)
-    ax_style.legend([f"{i[8:]}" for i in style_cols], ncol=2, fontsize=STYLE["font_size"]["small"], loc="upper left", framealpha=0.8)
+    # 4. 次图：成分股占比
+    ax_mem = fig.add_subplot(gs[2, 0])
+    mix_cols_2 = [c for c in mem_hold_col if c in hold_style.columns]
+    if mix_cols_2:
+        mean_map_2 = {c: hold_style[c].mean() for c in mix_cols_2}
+        hold_style[mix_cols_2].plot(ax=ax_mem, linewidth=1.5)
+        others = 1 - hold_style[mix_cols_2].sum(axis=1)
+        others.plot(ax=ax_mem, linewidth=1.5)
+        labels_2 = [f"{name} ({mean_map_2[c]:.2f})" for name, c in zip(["沪深300", "中证500", "中证1000", "中证2000"], mix_cols_2)]
+        labels_2.append(f"其他 ({others.mean():.2f})")
+        ax_mem.legend(labels_2, fontsize=STYLE["font_size"]["small"], framealpha=0.8)
+    # 再为我画一条线，用1减去上面四条线，legend是其他
+    
+    beautify_axis(ax_mem, "成分股占比", fontsize=STYLE["font_size"]["subtitle"])
+    ax_mem.tick_params(axis="x", labelrotation=30)
 
     # 5. 次图：换手率
     ax_turnover = fig.add_subplot(gs[2, 1])
-    mix_cols_2 = [c for c in [mem_hold_col, turnover_col] if c in hold_style.columns]
-    if mix_cols_2:
-        mean_map_2 = {c: hold_style[c].mean() for c in mix_cols_2}
+    mix_cols_3 = [c for c in [turnover_col] if c in hold_style.columns]
+    if mix_cols_3:
+        mean_map_3 = {c: hold_style[c].mean() for c in mix_cols_3}
         colors_turn = [STYLE["colors"]["strategy"], STYLE["colors"]["benchmark"]]
-        hold_style[mix_cols_2].plot(ax=ax_turnover, color=colors_turn[: len(mix_cols_2)], linewidth=1.5)
-        labels_2 = [f"{name} ({mean_map_2[c]:.2f})" for name, c in zip(["成分股占比", "换手率"], mix_cols_2)]
-        ax_turnover.legend(labels_2, fontsize=STYLE["font_size"]["small"], framealpha=0.8)
-    beautify_axis(ax_turnover, "成分股占比 / 换手率", fontsize=STYLE["font_size"]["subtitle"])
+        hold_style[mix_cols_3].plot(ax=ax_turnover, color=colors_turn[: len(mix_cols_3)], linewidth=1.5)
+        labels_3 = [f"{name} ({mean_map_3[c]:.2f})" for name, c in zip(["换手率"], mix_cols_3)]
+        ax_turnover.legend(labels_3, fontsize=STYLE["font_size"]["small"], framealpha=0.8)
+    beautify_axis(ax_turnover, "换手率", fontsize=STYLE["font_size"]["subtitle"])
     ax_turnover.tick_params(axis="x", labelrotation=30)
 
     # --- 右侧：数据表格区域 ---

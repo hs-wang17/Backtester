@@ -4,25 +4,23 @@ import src.config as config
 from src.portfolio_optimizer import solve_problem
 
 
-def solve_strategy(
-    s,
-    act,
-    code_list,
-    code_list_all,
-    zt_codes,
-    td_score,
-    td_mem,
-    stk_perm,
-    td_citic,
-    zz_citic,
-    td_cmvg,
-    zz_cmvg,
-    style_fac,
-    zz_style,
-    td_preclose,
-):
+def solve_strategy(s, act, **kwargs):
     """Solve strategy: Optimize portfolio based on various constraints and scores."""
 
+    code_list = kwargs.get('code_list')
+    code_list_all = kwargs.get('code_list_all')
+    zt_codes = kwargs.get('zt_codes')
+    td_score = kwargs.get('td_score')
+    td_mem = kwargs.get('td_mem')
+    stk_perm = kwargs.get('stk_perm')
+    td_citic = kwargs.get('td_citic')
+    zz_citic = kwargs.get('zz_citic')
+    td_cmvg = kwargs.get('td_cmvg')
+    zz_cmvg = kwargs.get('zz_cmvg')
+    style_fac = kwargs.get('style_fac')
+    zz_style = kwargs.get('zz_style')
+    td_preclose = kwargs.get('td_preclose')
+    
     # ensure td_score is a list
     td_score = td_score if isinstance(td_score, list) else [td_score]
 
@@ -221,26 +219,22 @@ def solve_strategy(
 
     return to_buy_s, to_sell_s
 
-
-def solve_strategy_noon(
-    s,
-    act,
-    sellable_amt,  # sellable amount (different from solve_strategy)
-    code_list,
-    code_list_all,
-    zt_codes,
-    td_score,
-    td_mem,
-    stk_perm,
-    td_citic,
-    zz_citic,
-    td_cmvg,
-    zz_cmvg,
-    style_fac,
-    zz_style,
-    td_preclose,
-):
+def solve_strategy_noon(s, act, sellable_amt, **kwargs):
     """Solve strategy: Optimize portfolio based on various constraints and scores."""
+
+    code_list = kwargs.get('code_list')
+    code_list_all = kwargs.get('code_list_all')
+    zt_codes = kwargs.get('zt_codes')
+    td_score = kwargs.get('td_score')
+    td_mem = kwargs.get('td_mem')
+    stk_perm = kwargs.get('stk_perm')
+    td_citic = kwargs.get('td_citic')
+    zz_citic = kwargs.get('zz_citic')
+    td_cmvg = kwargs.get('td_cmvg')
+    zz_cmvg = kwargs.get('zz_cmvg')
+    style_fac = kwargs.get('style_fac')
+    zz_style = kwargs.get('zz_style')
+    td_preclose = kwargs.get('td_preclose')
 
     # ensure td_score is a list
     td_score = td_score if isinstance(td_score, list) else [td_score]
@@ -402,9 +396,15 @@ def solve_strategy_noon(
     return to_buy_s, to_sell_s
 
 
-def topn_strategy(s, act, code_list, code_list_all, code_list_zt, td_score, td_preclose):
+def topn_strategy(s, act, **kwargs):
     """Top-N strategy: Buy top scoring stocks and sell underperforming ones."""
 
+    code_list = kwargs.get('code_list')
+    code_list_all = kwargs.get('code_list_all')
+    code_list_zt = kwargs.get('code_list_zt')
+    td_score = kwargs.get('td_score')
+    td_preclose = kwargs.get('td_preclose')
+    
     tot_hold_num, daily_sell_num = config.TOT_HOLD_NUM, config.DAILY_SELL_NUM
 
     if isinstance(td_score, list):

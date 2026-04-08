@@ -2,18 +2,18 @@
 
 # single score
 # 1-1) solve trade support 5 (morning)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260309.csv --trade_support 5
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260327.csv --trade_support 5
 # 1-2) solve trade support 7 (morning)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_10/predictions/StockPredictor_20260306/predictions_period_20260324_10.csv --trade_support 7
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260401.csv --trade_support 7
 # 1-3) solve trade support barra (morning)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260318.csv --trade_support 8
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260327.csv --trade_support 8
 # 1-4) topn (morning)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260122.csv --trade_support 7 --strategy topn
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260327.csv --trade_support 7 --strategy topn
 
 # 2-1) solve trade support 5 (afternoon)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260316_113125.csv --trade_support 5 --afternoon_start True
 # 2-2) solve trade support 7 (afternoon)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_noon/predictions/StockPredictor_20260302/predictions_period_20260323.csv --trade_support 7 --afternoon_start True
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260403.csv --trade_support 7 --afternoon_start True
 # 2-3) solve trade support barra (afternoon)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260302.csv --trade_support 8 --afternoon_start True
 

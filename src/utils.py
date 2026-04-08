@@ -176,11 +176,15 @@ def get_daily_support5(str_date):
         citic = df[[c for c in df.columns if "citic_b_" in c]].reindex(sub_code).fillna(0)
         cmvg = df[[c for c in df.columns if "cmvg_b_" in c]].reindex(sub_code).fillna(0)
         style = df[[c for c in df.columns if "style_b_" in c]].reindex(sub_code).fillna(0)
-        mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        # mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        mem_hs300 = df["hs300_member"].reindex(sub_code).dropna()
+        mem_zz500 = df["zz500_member"].reindex(sub_code).dropna()
+        mem_zz1000 = df["zz1000_member"].reindex(sub_code).dropna()
+        mem_zz2000 = df["zz2000_member"].reindex(sub_code).dropna()
         zz_citic = df.loc["idx_" + config.IDX_NAME, citic.columns]
         zz_cmvg = df.loc["idx_" + config.IDX_NAME, cmvg.columns]
         zz_style = df.loc["idx_" + config.IDX_NAME, style.columns]
-        data_cache["daily_support"][str_date] = (citic, cmvg, mem, zz_citic, zz_cmvg, style, zz_style, sub_code)
+        data_cache["daily_support"][str_date] = (citic, cmvg, [mem_hs300, mem_zz500, mem_zz1000, mem_zz2000], zz_citic, zz_cmvg, style, zz_style, sub_code)
     return data_cache["daily_support"][str_date]
 
 
@@ -210,11 +214,15 @@ def get_daily_support7(str_date):
         citic = df[[c for c in df.columns if "citic_r_" in c]].reindex(sub_code).fillna(0)
         cmvg = df[[c for c in df.columns if "cmvg_r_" in c]].reindex(sub_code).fillna(0)
         style = df[[c for c in df.columns if "style_r_" in c]].reindex(sub_code).fillna(0)
-        mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        # mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        mem_hs300 = df["hs300_member"].reindex(sub_code).dropna()
+        mem_zz500 = df["zz500_member"].reindex(sub_code).dropna()
+        mem_zz1000 = df["zz1000_member"].reindex(sub_code).dropna()
+        mem_zz2000 = df["zz2000_member"].reindex(sub_code).dropna()
         zz_citic = df.loc["idx_" + config.IDX_NAME, citic.columns]
         zz_cmvg = df.loc["idx_" + config.IDX_NAME, cmvg.columns]
         zz_style = df.loc["idx_" + config.IDX_NAME, style.columns]
-        data_cache["daily_support"][str_date] = (citic, cmvg, mem, zz_citic, zz_cmvg, style, zz_style, sub_code)
+        data_cache["daily_support"][str_date] = (citic, cmvg, [mem_hs300, mem_zz500, mem_zz1000, mem_zz2000], zz_citic, zz_cmvg, style, zz_style, sub_code)
     return data_cache["daily_support"][str_date]
 
 
@@ -244,9 +252,13 @@ def get_daily_support_barra(str_date):
         citic = df[[c for c in df.columns if "citic_r_" in c]].reindex(sub_code).fillna(0)
         cmvg = df[[c for c in df.columns if "cmvg_r_" in c]].reindex(sub_code).fillna(0)
         style = df[[c for c in df.columns if "style_r_" in c]].reindex(sub_code).fillna(0)
-        mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        # mem = df[config.IDX_NAME + "_member"].reindex(sub_code).dropna()
+        mem_hs300 = df["hs300_member"].reindex(sub_code).dropna()
+        mem_zz500 = df["zz500_member"].reindex(sub_code).dropna()
+        mem_zz1000 = df["zz1000_member"].reindex(sub_code).dropna()
+        mem_zz2000 = df["zz2000_member"].reindex(sub_code).dropna()
         zz_citic = df.loc["idx_" + config.IDX_NAME, citic.columns]
         zz_cmvg = df.loc["idx_" + config.IDX_NAME, cmvg.columns]
         zz_style = df.loc["idx_" + config.IDX_NAME, style.columns]
-        data_cache["daily_support"][str_date] = (citic, cmvg, mem, zz_citic, zz_cmvg, style, zz_style, sub_code)
+        data_cache["daily_support"][str_date] = (citic, cmvg, [mem_hs300, mem_zz500, mem_zz1000, mem_zz2000], zz_citic, zz_cmvg, style, zz_style, sub_code)
     return data_cache["daily_support"][str_date]
