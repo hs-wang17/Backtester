@@ -55,9 +55,15 @@ def run_backtest():
     adj = adj_factor / adj_factor.shift(1)
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
     if config.AFTERNOON_START:
-        vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
+        if not config.TWAP_MODE:
+            vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
+        else:
+            vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "twap_noon.fea"))
     else:
-        vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
+        if not config.TWAP_MODE:
+            vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
+        else:
+            vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "twap.fea"))
 
     scores, index_sets, col_sets = [], [], []
     for path in config.SCORES_PATH:

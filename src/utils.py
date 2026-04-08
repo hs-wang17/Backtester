@@ -76,7 +76,7 @@ def get_daily_price(date, vwap_df, close, pre_close, adj, scores, upper_price, l
 
 def get_daily_price_apm(date, vwap_am_df, vwap_pm_df, close, pre_close, adj, scores, scores_noon, upper_price, lower_price, last_zt_df):
     """
-    Get the daily price data for a given date for the morning and afternoon session.
+    Get the daily price data for a given date for the morning and noon session.
 
     Parameters
     ----------
@@ -85,7 +85,7 @@ def get_daily_price_apm(date, vwap_am_df, vwap_pm_df, close, pre_close, adj, sco
     vwap_am_df : pandas.DataFrame
         The dataframe containing vwap data for the morning session.
     vwap_pm_df : pandas.DataFrame
-        The dataframe containing vwap data for the afternoon session.
+        The dataframe containing vwap data for the noon session.
     close : pandas.DataFrame
         The dataframe containing close data.
     pre_close : pandas.DataFrame
@@ -93,7 +93,9 @@ def get_daily_price_apm(date, vwap_am_df, vwap_pm_df, close, pre_close, adj, sco
     adj : pandas.DataFrame
         The dataframe containing adj data.
     scores : pandas.DataFrame
-        The dataframe containing scores data.
+        The dataframe containing scores data for the morning session.
+    scores_noon : pandas.DataFrame
+        The dataframe containing scores data for the noon session.
     upper_price : pandas.DataFrame
         The dataframe containing upper price data.
     lower_price : pandas.DataFrame
@@ -142,6 +144,78 @@ def get_daily_price_apm(date, vwap_am_df, vwap_pm_df, close, pre_close, adj, sco
                 adj.loc[date].replace(1, np.nan).dropna().to_dict(),
                 [score.loc[date].dropna() for score in scores] if isinstance(scores, list) else scores.loc[date].dropna(),
                 [score.loc[date].dropna() for score in scores_noon] if isinstance(scores_noon, list) else scores_noon.loc[date].dropna(),
+                upper_price.loc[date].dropna(),
+                lower_price.loc[date].dropna(),
+                last_zt_df.loc[date].dropna(),
+            )
+
+    return data_cache["daily_price"][date]
+
+def get_daily_price_continuous(date, vwap_first_df, vwap_second_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df):
+    """
+    Get the daily price data for a given date for the continuous session.
+
+    Parameters
+    ----------
+    date : str
+        The date for which to retrieve the daily price data.
+    vwap_first_df : pandas.DataFrame
+        The dataframe containing vwap data for the first session.
+    vwap_second_df : pandas.DataFrame
+        The dataframe containing vwap data for the second session.
+    close : pandas.DataFrame
+        The dataframe containing close data.
+    pre_close : pandas.DataFrame
+        The dataframe containing pre-close data.
+    adj : pandas.DataFrame
+        The dataframe containing adj data.
+    scores : pandas.DataFrame
+        The dataframe containing scores data.
+    upper_price : pandas.DataFrame
+        The dataframe containing upper price data.
+    lower_price : pandas.DataFrame
+        The dataframe containing lower price data.
+    last_zt_df : pandas.DataFrame
+        The dataframe containing last_zt data.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the daily price data for the given date.
+    """
+    if scores is None:  # only used when scores is not updated everyday
+        data_cache["daily_price"][date] = (
+            vwap_first_df.loc[date].dropna(),
+            vwap_second_df.loc[date].dropna(),
+            close.loc[date].dropna(),
+            pre_close.loc[date].dropna(),
+            adj.loc[date].replace(1, np.nan).dropna().to_dict(),
+            None,
+            upper_price.loc[date].dropna(),
+            lower_price.loc[date].dropna(),
+            last_zt_df.loc[date].dropna(),
+        )
+    elif isinstance(scores, pd.Series):  # if scores is Series
+        data_cache["daily_price"][date] = (
+            vwap_first_df.loc[date].dropna(),
+            vwap_second_df.loc[date].dropna(),
+            close.loc[date].dropna(),
+            pre_close.loc[date].dropna(),
+            adj.loc[date].replace(1, np.nan).dropna().to_dict(),
+            [score.dropna() for score in scores] if isinstance(scores, list) else scores.dropna(),
+            upper_price.loc[date].dropna(),
+            lower_price.loc[date].dropna(),
+            last_zt_df.loc[date].dropna(),
+        )
+    else:  # if scores is DataFrame
+        if date not in data_cache["daily_price"]:
+            data_cache["daily_price"][date] = (
+                vwap_first_df.loc[date].dropna(),
+                vwap_second_df.loc[date].dropna(),
+                close.loc[date].dropna(),
+                pre_close.loc[date].dropna(),
+                adj.loc[date].replace(1, np.nan).dropna().to_dict(),
+                [score.loc[date].dropna() for score in scores] if isinstance(scores, list) else scores.loc[date].dropna(),
                 upper_price.loc[date].dropna(),
                 lower_price.loc[date].dropna(),
                 last_zt_df.loc[date].dropna(),

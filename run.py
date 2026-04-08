@@ -2,6 +2,7 @@ import argparse
 from src import config
 from src.backtest import run_backtest
 from src.backtest_apm import run_backtest_apm
+from src.backtest_continuous import run_backtest_continuous
 
 
 def str2bool(v):
@@ -21,7 +22,9 @@ def parse_args():
     parser.add_argument("--call_start", type=str2bool, default=False, help="Call start")
     parser.add_argument("--citic_limit", type=float, default=None, help="Citic limit")
     parser.add_argument("--citic_limit_noon", type=float, default=None, help="Citic limit for noon trading")
+    parser.add_argument("--citic_limit_second", type=float, default=None, help="Citic limit for second")
     parser.add_argument("--cmvg_limit", type=float, default=None, help="Cmvg limit")
+    parser.add_argument("--continuous_mode", type=str2bool, default=False, help="Continuous mode")
     parser.add_argument("--daily_sell_num", type=int, default=None, help="Daily sell number")
     parser.add_argument("--hold_init", type=str, default="solve", help="Hold initialization method (member or solve)")
     parser.add_argument("--lambda_sparse", type=float, default=None, help="Lambda sparse")
@@ -45,6 +48,8 @@ def parse_args():
     parser.add_argument("--trade_support", type=int, required=True, help="Trade support type (5 or 7)")
     parser.add_argument("--turn_max", type=float, default=None, help="Turn max")
     parser.add_argument("--turn_max_noon", type=float, default=None, help="Turn max for noon trading")
+    parser.add_argument("--turn_max_second", type=float, default=None, help="Turn max for second")
+    parser.add_argument("--twap_mode", type=str2bool, default=False, help="TWAP mode")
     return parser.parse_args()
 
 
@@ -53,5 +58,7 @@ if __name__ == "__main__":
     config.update_from_args(args)
     if config.APM_MODE:
         run_backtest_apm()
+    elif config.CONTINUOUS_MODE:
+        run_backtest_continuous()
     else:
         run_backtest()

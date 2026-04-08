@@ -371,12 +371,15 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     # ==========================================
     # 4. 保存
     # ==========================================
+    file_name_suffix = ""
     if config.AFTERNOON_START:
-        file_name_suffix = "_afternoon"
-    elif config.CALL_START:
-        file_name_suffix = "_call"
-    else:
-        file_name_suffix = ""
+        file_name_suffix += "_afternoon"
+    if config.CALL_START:
+        file_name_suffix += "_call"
+    if config.TWAP_MODE:
+        file_name_suffix += "_twap"
+    if config.CONTINUOUS_MODE:
+        file_name_suffix += "_continuous"
 
     if config.STRATEGY == "solve":
         png_path = (

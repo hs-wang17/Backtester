@@ -345,7 +345,10 @@ class account:
             if total_buy >= cash_avail + total_sell - 1000:
                 break
             if code not in self.hold_dict:
-                self.hold_dict[code] = stk(code, self.td_price_now[code], self.td_upper[code], self.td_lower[code])
+                try:
+                    self.hold_dict[code] = stk(code, self.td_price_now[code], self.td_upper[code], self.td_lower[code])
+                except:
+                    continue  # TODO: debug self.td_price_now[code] key error
             st = self.hold_dict[code]
             if st.low_price < st.price < st.up_price:
                 vol = min(

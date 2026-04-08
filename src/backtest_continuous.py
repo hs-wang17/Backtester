@@ -8,15 +8,15 @@ import src.config as config
 from src.account import account
 from src.analysis import analyse
 from src.plot import plot
-from src.strategy import solve_strategy, solve_strategy_noon, topn_strategy, record_trade
-from src.utils import get_daily_price_apm, get_daily_support5, get_daily_support7, get_daily_support_barra
+from src.strategy import solve_strategy, solve_strategy_second, topn_strategy, record_trade
+from src.utils import get_daily_price_continuous, get_daily_support5, get_daily_support7, get_daily_support_barra
 
 
 def load_daily_data(name):
     return pd.read_feather(os.path.join(config.DAILY_DATA_PATH, f"{name}.feather"))
 
 
-def run_backtest_apm():
+def run_backtest_continuous():
     """
     Run backtest on the given dataset.
 
@@ -58,32 +58,37 @@ def run_backtest_apm():
     lower_price = pre_close + 0.9 * (low_limit - pre_close)
     adj = adj_factor / adj_factor.shift(1)
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
-    if not config.TWAP_MODE:
-        vwap_am_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap.fea"))
-        vwap_pm_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
+        
+    if config.AFTERNOON_START:
+        if not config.TWAP_MODE:
+            vwap_first_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "vwap_121_136.fea"))
+            vwap_second_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "vwap_136_151.fea"))
+        else:
+            vwap_first_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "twap_121_136.fea"))
+            vwap_second_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "twap_136_151.fea"))
     else:
-        vwap_am_df = pd.read_feather(os.path.join(config.DATA_PATH, "twap.fea"))
-        vwap_pm_df = pd.read_feather(os.path.join(config.DATA_PATH, "twap_noon.fea"))
-
-    index_sets, col_sets = [], []
-
-    scores_am = pd.read_csv(config.SCORES_PATH[0], index_col=0).T.sort_index().shift(1).dropna(how="all")
-    scores_pm = pd.read_csv(config.NOON_SCORES_PATH[0], index_col=0).T.sort_index().dropna(how="all")
-    scores_am.columns = scores_am.columns.astype(str).str.zfill(6)
-    scores_pm.columns = scores_pm.columns.astype(str).str.zfill(6)
-    scores_am = scores_am[scores_am.columns[scores_am.columns.str[0].isin(["0", "3", "6"])]]
-    scores_pm = scores_pm[scores_pm.columns[scores_pm.columns.str[0].isin(["0", "3", "6"])]]
-    scores_am.index = scores_am.index.astype(str)
-    scores_pm.index = scores_pm.index.astype(str)
-    index_sets = [set(scores_am.index), set(scores_pm.index)]
-    col_sets = [set(scores_am.columns), set(scores_pm.columns)]
-
-    common_dates = sorted(
-        set.intersection(*index_sets) & set(vwap_am_df.index.astype(str)) & set(vwap_pm_df.index.astype(str))
-    )  # apply date filter with vwap_df
+        if not config.TWAP_MODE:
+            vwap_first_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "vwap_0_15.fea"))
+            vwap_second_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "vwap_15_30.fea"))
+        else:
+            vwap_first_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "twap_0_15.fea"))
+            vwap_second_df = pd.read_feather(os.path.join(config.VWAP_TWAP_PATH, "twap_15_30.fea"))
+    
+    scores, index_sets, col_sets = [], [], []
+    for path in config.SCORES_PATH:
+        if config.AFTERNOON_START or config.CALL_START:
+            scores_single = pd.read_csv(path, index_col=0).T.sort_index().dropna(how="all")
+        else:
+            scores_single = pd.read_csv(path, index_col=0).T.sort_index().shift(1).dropna(how="all")
+        scores_single.columns = scores_single.columns.astype(str).str.zfill(6)
+        scores_single = scores_single[scores_single.columns[scores_single.columns.str[0].isin(["0", "3", "6"])]]
+        scores_single.index = scores_single.index.astype(str)
+        scores.append(scores_single)
+        index_sets.append(set(scores_single.index))
+        col_sets.append(set(scores_single.columns))
+    common_dates = sorted(set.intersection(*index_sets) & set(vwap_first_df.index.astype(str)))
     common_cols = sorted(set.intersection(*col_sets))
-    scores_am = scores_am.loc[common_dates, common_cols]
-    scores_pm = scores_pm.loc[common_dates, common_cols]
+    scores = [df.loc[common_dates, common_cols] for df in scores]
     date_list = common_dates[config.START_DATE_SHIFT :]  # apply start date shift
 
     s = account(config.INITIAL_MONEY)
@@ -99,8 +104,8 @@ def run_backtest_apm():
 
     for date in tqdm(date_list, desc="Backtesting"):
         # get daily data
-        td_open, td_noon_open, td_close, td_preclose, td_adj, td_score, td_score_noon, td_upper, td_lower, last_zt = get_daily_price_apm(
-            str(date), vwap_am_df, vwap_pm_df, close, pre_close, adj, scores_am, scores_pm, upper_price, lower_price, last_zt_df
+        td_first_open, td_second_open, td_close, td_preclose, td_adj, td_score, td_upper, td_lower, last_zt = get_daily_price_continuous(
+            str(date), vwap_first_df, vwap_second_df, close, pre_close, adj, scores, upper_price, lower_price, last_zt_df
         )
 
         # get daily support data
@@ -122,7 +127,7 @@ def run_backtest_apm():
             td_mem = mem_zz2000
             
         # get today's tradable and zt stocks
-        code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
+        code_list_all = pd.concat([td_upper, td_lower, td_close, td_first_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
         code_list = [
             x for x in code_list_all if (x in sub_code_list) and (x[0] not in ["4", "8"])
         ]  # tradable stocks except new/ST/BSE stocks
@@ -132,7 +137,7 @@ def run_backtest_apm():
         # calculate stk_perm
         stk_perm = (td_mem + td_mem.max()) * (config.STK_HOLD_LIMIT / (2 * td_mem.max()))
 
-        """morning trading"""
+        """first trading"""
 
         # refresh before market open
         act = s.refresh_open(td_upper, td_lower, td_preclose.to_dict(), td_adj)
@@ -163,25 +168,27 @@ def run_backtest_apm():
 
         # execute trades
         hold_df, sellable_amt = record_trade(
-            s, td_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "am", None
+            s, td_first_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "0", None
         )
 
-        """noon trading"""
+        """second trading"""
 
         # refresh before market open
         act = s.cal_total()
         
         # prepare params dictionary
-        params['td_score'] = td_score_noon
-
+        params['td_score'] = [score.add(td_second_open / td_first_open - 1, fill_value=0) for score in td_score]
+        
         # strategy
         if config.STRATEGY == "solve":
-            to_buy_s, to_sell_s = solve_strategy_noon(s, act, sellable_amt, **params)
+            to_buy_s, to_sell_s = solve_strategy_second(s, act, sellable_amt, **params)
         elif config.STRATEGY == "topn":
             to_buy_s, to_sell_s = topn_strategy(s, act, **params)
 
         # execute trades
-        hold_df, sellable_amt = record_trade(s, td_noon_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "pm", td_close)
+        hold_df, sellable_amt = record_trade(
+            s, td_second_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "1", td_close,
+        )
 
         # calculate holding style difference
         hold_weight = hold_df["amt"] / hold_df["amt"].sum()
@@ -194,7 +201,7 @@ def run_backtest_apm():
         td_mem_zz1000_hold = hold_weight.reindex(mem_zz1000[mem_zz1000 > 0].index).fillna(0).sum()
         td_mem_zz2000_hold = hold_weight.reindex(mem_zz2000[mem_zz2000 > 0].index).fillna(0).sum()
         td_hold_num = len(hold_weight)
-        td_turnover = (buy_s[date + "am"] + sell_s[date + "am"] + buy_s[date + "pm"] + sell_s[date + "pm"]) / act_s[date] * 0.5
+        td_turnover = (buy_s[date + "0"] + sell_s[date + "0"] + buy_s[date + "1"] + sell_s[date + "1"]) / act_s[date] * 0.5
         if isinstance(td_score, list):
             hold_weight_aligned = hold_weight.reindex(td_score[0].index).fillna(0)
             amt_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
@@ -236,18 +243,18 @@ def run_backtest_apm():
         if config.AFTERNOON_START:
             if config.STRATEGY == "solve":
                 all_hold_df.to_csv(
-                    config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_afternoon_trade_support{config.TRADE_SUPPORT}_hold_df.csv",
+                    config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_afternoon_trade_support{config.TRADE_SUPPORT}_continuous_hold_df.csv",
                     index_label="code",
                 )
             elif config.STRATEGY == "topn":
-                all_hold_df.to_csv(config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_afternoon_topn_hold_df.csv", index_label="code")
+                all_hold_df.to_csv(config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_afternoon_topn_continuous_hold_df.csv", index_label="code")
         else:
             if config.STRATEGY == "solve":
                 all_hold_df.to_csv(
-                    config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_hold_df.csv", index_label="code"
+                    config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_trade_support{config.TRADE_SUPPORT}_continuous_hold_df.csv", index_label="code"
                 )
             elif config.STRATEGY == "topn":
-                all_hold_df.to_csv(config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_topn_hold_df.csv", index_label="code")
+                all_hold_df.to_csv(config.RESULT_PATH + "/" + config.STRATEGY_NAME + f"_topn_continuous_hold_df.csv", index_label="code")
         plot(nv, rel_nv, info, strategy=config.STRATEGY_NAME, scores_path=config.SCORES_PATH, hold_style=hold_style)
 
     else:
