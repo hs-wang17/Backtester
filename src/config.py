@@ -18,7 +18,8 @@ PLOT = True  # 是否绘制回测结果
 AFTERNOON_START = True  # 是否为午盘交易模式
 APM_MODE = False  # 是否为早午盘交易模式
 CALL_START = False  # 是否为集合竞价模式
-CONTINUOUS_MODE = False  # 是否为连续交易模式
+CONTINUOUS_MODE = False  # 是否为两阶段连续交易模式
+CONTINUOUS_GENERAL_MODE = False  # 是否为连续交易模式
 TWAP_MODE = False  # 是否为TWAP模式
 PARA_NAME = "20251231_trade_support7"  # 参数文件
 SOLVER_METHOD = "basic"  # 组合优化方法(单阶段/两阶段)
@@ -71,7 +72,8 @@ def update_from_args(args):
     global RESULT_PATH, SCORES_PATH, NOON_SCORES_PATH, STRATEGY_NAME, TRADE_SUPPORT
     global CITIC_LIMIT, CMVG_LIMIT, CITIC_LIMIT_NOON, CITIC_LIMIT_SECOND, STK_HOLD_LIMIT, OTHER_LIMIT
     global STK_BUY_R, TURN_MAX, TURN_MAX_NOON, TURN_MAX_SECOND, MEM_HOLD
-    global PLOT, AFTERNOON_START, APM_MODE, CALL_START, CONTINUOUS_MODE, TWAP_MODE, PARA_NAME, SOLVER_METHOD, STRATEGY
+    global PLOT, AFTERNOON_START, APM_MODE, CALL_START, CONTINUOUS_MODE, CONTINUOUS_GENERAL_MODE
+    global TWAP_MODE, PARA_NAME, SOLVER_METHOD, STRATEGY
     global TOT_HOLD_NUM, DAILY_SELL_NUM, HOLD_INIT, START_DATE_SHIFT, LAMBDA_SPARSE
     global N_CALLS, N_RANDOM_STARTS, REMOVE_ABNORMAL, MIX_COEFFICIENT
     
@@ -208,6 +210,8 @@ def update_from_args(args):
         CALL_START = args.call_start
     if hasattr(args, "continuous_mode") and args.continuous_mode is not None:
         CONTINUOUS_MODE = args.continuous_mode
+    if hasattr(args, "continuous_general_mode") and args.continuous_general_mode is not None:
+        CONTINUOUS_GENERAL_MODE = args.continuous_general_mode
     if hasattr(args, "twap_mode") and args.twap_mode is not None:
         TWAP_MODE = args.twap_mode
     if hasattr(args, "para_name") and args.para_name is not None:

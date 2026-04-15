@@ -3,6 +3,7 @@ from src import config
 from src.backtest import run_backtest
 from src.backtest_apm import run_backtest_apm
 from src.backtest_continuous import run_backtest_continuous
+from src.backtest_continuous_general import run_backtest_continuous_general
 
 
 def str2bool(v):
@@ -25,6 +26,7 @@ def parse_args():
     parser.add_argument("--citic_limit_second", type=float, default=None, help="Citic limit for second")
     parser.add_argument("--cmvg_limit", type=float, default=None, help="Cmvg limit")
     parser.add_argument("--continuous_mode", type=str2bool, default=False, help="Continuous mode")
+    parser.add_argument("--continuous_general_mode", type=str2bool, default=False, help="Continuous general mode")
     parser.add_argument("--daily_sell_num", type=int, default=None, help="Daily sell number")
     parser.add_argument("--hold_init", type=str, default="solve", help="Hold initialization method (member or solve)")
     parser.add_argument("--lambda_sparse", type=float, default=None, help="Lambda sparse")
@@ -60,5 +62,7 @@ if __name__ == "__main__":
         run_backtest_apm()
     elif config.CONTINUOUS_MODE:
         run_backtest_continuous()
+    elif config.CONTINUOUS_GENERAL_MODE:
+        run_backtest_continuous_general()
     else:
         run_backtest()
