@@ -2,7 +2,6 @@ import json
 import os
 from dataclasses import dataclass, asdict
 from typing import Dict, Any
-import numpy as np
 
 
 @dataclass
@@ -22,9 +21,12 @@ class ParamManager:
     def __init__(self, param_file: str = None):
         import src.config as config
 
-        self.param_file = (
-            f"/home/haris/project/backtester/para_optimizer_gp/results/optimal_params_trade_support{config.TRADE_SUPPORT}.json"
+        self.param_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../para_optimizer_gp/results/",
+            f"optimal_params_trade_support{config.TRADE_SUPPORT}.json"
         )
+        self.param_file = os.path.abspath(self.param_file)
 
         self.params = HyperParams()
         self.eps = 1e-8

@@ -5,6 +5,7 @@ from typing import Callable, Dict, Any
 from skopt import gp_minimize
 from skopt.space import Real
 from skopt.utils import use_named_args
+import os
 import json
 from datetime import datetime
 from src.param_manager import ParamManager
@@ -218,9 +219,12 @@ class HyperparameterOptimizer:
 
     def save_history(self):
         """save optimization history to JSON file"""
-        history_file = (
-            f"/home/haris/project/backtester/para_optimizer_gp/results/optimization_history_trade_support{config.TRADE_SUPPORT}.json"
+        history_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../para_optimizer_gp/results/",
+            f"optimization_history_trade_support{config.TRADE_SUPPORT}.json"
         )
+        history_file = os.path.abspath(history_file)
         with open(history_file, "w", encoding="utf-8") as f:
             json.dump(self.history, f, indent=4, ensure_ascii=False)
         print(f"优化历史已保存到 {history_file}")

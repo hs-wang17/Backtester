@@ -270,7 +270,12 @@ def run_backtest_continuous_general():
 
     else:
         # PLOT=False: use for parameter optimization (efficient frontier), save results to a unified JSON file
-        json_path = f"/home/haris/project/backtester/para_optimizer_ef/scores/{config.PARA_NAME}.json"
+        json_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../para_optimizer_ef/scores/",
+            f"{config.PARA_NAME}.json"
+        )
+        json_path = os.path.abspath(json_path)
 
         new_entry = {
             "parameters": {

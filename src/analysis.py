@@ -5,14 +5,14 @@ import src.config as config
 
 def analyse(net_value):
     """
-    Backtest Performance Analyzer (Enhanced Version)
+    Backtest Performance Analyzer
     ------------------------------------------------
     输入：
         net_value: DataFrame 必须包含 'strategy' 和 'zs'
     输出：
-        info: pd.Series     - 策略指标
-        net_value_df: pd.DataFrame - 策略与基准净值
-        relative_net_value: pd.Series   - 超额净值曲线
+        info: pd.Series                     - 策略指标
+        net_value_df: pd.DataFrame          - 策略与基准净值
+        relative_net_value: pd.Series       - 超额净值曲线
     """
     # 绝对指标
     abs_ret = net_value["strategy"].pct_change().dropna()
