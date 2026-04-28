@@ -164,7 +164,3 @@ python run.py --scores_path /path/to/scores.csv
 # 联系方式与贡献声明 🤝
 
 欢迎通过 Issues 提问或提交 PR。对重大设计变更请提前在 Issue 中讨论以获得维护者意见。感谢你的贡献！
-
----
-
-如果你希望，我可以直接生成一个 `PULL_REQUEST_TEMPLATE.md` 与 `ISSUE_TEMPLATE.md`（包含上述必填字段），或把上述 CI/格式化脚本（black/isort/flake8 配置、GitHub Actions）也一并帮你写好，告诉我你想要哪些自动化工具，我会直接给出文件内容。

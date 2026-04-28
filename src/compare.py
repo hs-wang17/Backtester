@@ -57,8 +57,10 @@ def plot_strategy_comparison(file_paths, title, save_dir, date_str, support_type
     legend_labels = [
         "早盘策略(20日)",
         "早盘策略(10日)",
+        "早盘策略(Fib)",
         "午盘策略(20日)",
-        "午盘策略(10日)"
+        "午盘策略(10日)",
+        "午盘策略(Fib)"
     ]
 
     for i, (name, df) in enumerate(sliced_dfs.items()):
@@ -115,9 +117,11 @@ def plot_strategy_comparison(file_paths, title, save_dir, date_str, support_type
 def main():
     target_dir_list = [
         "/home/haris/mymodel/backtests",
-        "/home/haris/mymodel_noon/backtests",
         "/home/haris/mymodel_10/backtests",
-        "/home/haris/mymodel_noon_10/backtests"
+        "/home/haris/mymodel_fib/backtests",
+        "/home/haris/mymodel_noon/backtests",
+        "/home/haris/mymodel_noon_10/backtests",
+        "/home/haris/mymodel_noon_fib/backtests"
     ]
 
     suffix = '_rel_nv.csv'

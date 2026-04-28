@@ -8,7 +8,7 @@ import src.config as config
 from src.account import account
 from src.analysis import analyse
 from src.plot import plot
-from src.strategy import solve_strategy, solve_strategy_second, topn_strategy, record_trade
+from src.strategy import solve_strategy, solve_strategy_second, topn_strategy
 from src.utils import get_daily_price_continuous_general, get_daily_support5, get_daily_support7, get_daily_support_barra
 
 
@@ -170,8 +170,8 @@ def run_backtest_continuous_general():
             to_buy_s, to_sell_s = topn_strategy(s, act, **params)
 
         # execute trades
-        hold_df, sellable_amt = record_trade(
-            s, td_open_list[0], to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "0", None
+        hold_df, sellable_amount = s.record_trade(
+            td_open_list[0], to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "0", None
         )
 
         """second to sixth trading"""
@@ -186,18 +186,18 @@ def run_backtest_continuous_general():
             
             # strategy
             if config.STRATEGY == "solve":
-                to_buy_s, to_sell_s = solve_strategy_second(s, act, sellable_amt, **params)
+                to_buy_s, to_sell_s = solve_strategy_second(s, act, sellable_amount, **params)
             elif config.STRATEGY == "topn":
                 to_buy_s, to_sell_s = topn_strategy(s, act, **params)
             
             # execute trades
-            hold_df, sellable_amt = record_trade(
-                s, td_open_list[i], to_buy_s, to_sell_s, date, 
+            hold_df, sellable_amount = s.record_trade(
+                td_open_list[i], to_buy_s, to_sell_s, date, 
                 act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, str(i), td_close,
             )
         
         # calculate holding style difference
-        hold_weight = hold_df["amt"] / hold_df["amt"].sum()
+        hold_weight = hold_df["amount"] / hold_df["amount"].sum()
         td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic  # 行业偏离
         td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg  # 市值偏离
         td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style  # 风格偏离
@@ -215,10 +215,10 @@ def run_backtest_continuous_general():
                        + buy_s[date + "5"] + sell_s[date + "5"]) / act_s[date] / 6.0
         if isinstance(td_score, list):
             hold_weight_aligned = hold_weight.reindex(td_score[0].index).fillna(0)
-            amt_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
+            amount_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
         else:
             hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
-            amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
+            amount_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
 
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
         # td_diff["mem_hold"] = td_mem_hold
@@ -228,7 +228,7 @@ def run_backtest_continuous_general():
         td_diff["mem_zz2000_hold"] = td_mem_zz2000_hold
         td_diff["hold_num"] = td_hold_num
         td_diff["turnover"] = td_turnover
-        td_diff["amt_weighted_rank"] = amt_weighted_rank
+        td_diff["amount_weighted_rank"] = amount_weighted_rank
         hold_style_dict[date] = td_diff
 
     # aggregate results

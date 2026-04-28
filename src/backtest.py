@@ -8,7 +8,7 @@ import src.config as config
 from src.account import account
 from src.analysis import analyse
 from src.plot import plot
-from src.strategy import solve_strategy, topn_strategy, record_trade
+from src.strategy import solve_strategy, topn_strategy
 from src.utils import get_daily_price, get_daily_support5, get_daily_support7, get_daily_support_barra
 
 
@@ -19,23 +19,6 @@ def load_daily_data(name):
 def run_backtest():
     """
     Run backtest on the given dataset.
-
-    Parameters
-    ----------
-    INITIAL_MONEY : float
-        The initial amount of money used for backtesting.
-    STK_HOLD_LIMIT : float
-        The limit of holding stock.
-    STK_BUY_R : float
-        The rate of buying stock.
-    TURN_MAX : float
-        The maximum rate of buying stock.
-    CITIC_LIMIT : float
-        The limit of CITIC.
-    CMVG_LIMIT : float
-        The limit of CMVG.
-    OTHER_LIMIT : float
-        The limit of other style metrics.
 
     Returns
     -------
@@ -54,6 +37,8 @@ def run_backtest():
     lower_price = pre_close + 0.9 * (low_limit - pre_close)
     adj = adj_factor / adj_factor.shift(1)
     zs_day = load_daily_data("idx_close")[config.IDX_NAME_CN].dropna()
+    
+    # read trading price data
     if config.AFTERNOON_START:
         if not config.TWAP_MODE:
             vwap_df = pd.read_feather(os.path.join(config.DATA_PATH, "vwap_noon.fea"))
@@ -80,11 +65,12 @@ def run_backtest():
     common_dates = sorted(set.intersection(*index_sets) & set(vwap_df.index.astype(str)))  # apply date filter with vwap_df
     common_cols = sorted(set.intersection(*col_sets))
     scores = [df.loc[common_dates, common_cols] for df in scores]
-    date_list = common_dates[config.START_DATE_SHIFT :]  # apply start date shift
+    date_list = common_dates[config.START_DATE_SHIFT:]  # apply start date shift
 
     s = account(config.INITIAL_MONEY)
     s.cal_total()
-
+    
+    # TODO: move the following dicts to account class
     act_s = {}
     cash_s = {}
     buy_s = {}
@@ -104,7 +90,7 @@ def run_backtest():
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support5(str(date))
         elif config.TRADE_SUPPORT == 7:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support7(str(date))
-        else:
+        elif config.TRADE_SUPPORT == 8:
             td_citic, td_cmvg, td_mem, zz_citic, zz_cmvg, style_fac, zz_style, sub_code_list = get_daily_support_barra(str(date))
 
         mem_hs300, mem_zz500, mem_zz1000, mem_zz2000 = td_mem
@@ -117,15 +103,15 @@ def run_backtest():
         elif config.IDX_NAME == "zz2000":
             td_mem = mem_zz2000
             
-        # get today's tradable and zt stocks
-        code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()  # tradable stocks
-        code_list = [
-            x for x in code_list_all if (x in sub_code_list) and (x[0] not in ["4", "8"])
-        ]  # tradable stocks except new/ST/BSE stocks
+        # get today's tradable stocks
+        code_list_all = pd.concat([td_upper, td_lower, td_close, td_open], axis=1).dropna(how="any").index.tolist()
+        # get today's tradable stocks except new/ST/BSE stocks
+        code_list = list((set(code_list_all) & set(sub_code_list))) 
         zt_codes = last_zt[last_zt == 1].index.tolist()
-        code_list_zt = [x for x in code_list if x not in zt_codes]  # remove zt stocks
+        # get today's tradable stocks except new/ST/BSE/zt stocks
+        code_list_zt = list((set(code_list) - set(zt_codes)))
 
-        # calculate stk_perm
+        # calculate stock permission (key point -> scale to [0.5, 1])
         stk_perm = (td_mem + td_mem.max()) * (config.STK_HOLD_LIMIT / (2 * td_mem.max()))
 
         # refresh before market open
@@ -156,12 +142,12 @@ def run_backtest():
             to_buy_s, to_sell_s = topn_strategy(s, act, **params)
 
         # execute trades
-        hold_df, _ = record_trade(
-            s, td_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "", td_close
+        hold_df, _ = s.record_trade(
+            td_open, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, "", td_close
         )
 
         # calculate holding style difference
-        hold_weight = hold_df["amt"] / hold_df["amt"].sum()
+        hold_weight = hold_df["amount"] / hold_df["amount"].sum()
         td_citic_diff = td_citic.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_citic  # 行业偏离
         td_cmvg_diff = td_cmvg.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_cmvg  # 市值偏离
         td_style_diff = style_fac.reindex(hold_weight.index).fillna(0).T.dot(hold_weight) - zz_style  # 风格偏离
@@ -174,11 +160,12 @@ def run_backtest():
         td_turnover = (buy_s[date] + sell_s[date]) / act_s[date] * 0.5
         if isinstance(td_score, list):
             hold_weight_aligned = hold_weight.reindex(td_score[0].index).fillna(0)
-            amt_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
+            amount_weighted_rank = hold_weight_aligned @ td_score[0].rank(ascending=False)
         else:
             hold_weight_aligned = hold_weight.reindex(td_score.index).fillna(0)
-            amt_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
+            amount_weighted_rank = hold_weight_aligned @ td_score.rank(ascending=False)
 
+        # TODO: create the dataframe before exectuting the default values
         td_diff = pd.concat([td_citic_diff, td_cmvg_diff, td_style_diff])
         # td_diff["mem_hold"] = td_mem_hold
         td_diff["mem_hs300_hold"] = td_mem_hs300_hold
@@ -187,9 +174,10 @@ def run_backtest():
         td_diff["mem_zz2000_hold"] = td_mem_zz2000_hold
         td_diff["hold_num"] = td_hold_num
         td_diff["turnover"] = td_turnover
-        td_diff["amt_weighted_rank"] = amt_weighted_rank
+        td_diff["amount_weighted_rank"] = amount_weighted_rank
         hold_style_dict[date] = td_diff
 
+    # TODO: move total_s to account class
     # aggregate results
     total_s = pd.concat(
         [pd.Series(act_s), pd.Series(cash_s)],

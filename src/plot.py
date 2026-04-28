@@ -24,7 +24,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
     hold_num_col = "hold_num"
     mem_hold_col = ["mem_hs300_hold", "mem_zz500_hold", "mem_zz1000_hold", "mem_zz2000_hold"]
     turnover_col = "turnover"
-    amt_weighted_rank_col = "amt_weighted_rank"
+    amount_weighted_rank_col = "amount_weighted_rank"
 
     # ========== 准备净值数据 ==========
     plot_df = net_value_df.copy()
@@ -224,7 +224,7 @@ def plot(net_value_df, relative_net_value, info, strategy=None, scores_path=None
 
     # 3. 次图：持股数量
     ax_holdnum = fig.add_subplot(gs[1, 1])
-    mix_cols_1 = [c for c in [hold_num_col, amt_weighted_rank_col] if c in hold_style.columns]
+    mix_cols_1 = [c for c in [hold_num_col, amount_weighted_rank_col] if c in hold_style.columns]
     if mix_cols_1:
         mean_map_1 = {c: hold_style[c].mean() for c in mix_cols_1}
         # 使用双色避免混淆

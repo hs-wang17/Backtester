@@ -24,7 +24,7 @@ def solve_strategy(s, act, **kwargs):
     # ensure td_score is a list
     td_score = td_score if isinstance(td_score, list) else [td_score]
 
-    # get last holding
+    # get initial holding
     if len(s.hold_dict) == 0:
         if config.HOLD_INIT == "member":
             last_hold_init = td_mem.reindex(code_list).fillna(0)
@@ -75,9 +75,9 @@ def solve_strategy(s, act, **kwargs):
         last_hold = last_hold_init
     else:
         hold_df, _ = s.close_today()
-        last_hold = hold_df["amt"].reindex(code_list).fillna(0) / act
-        st_hold = hold_df["amt"].reindex([x for x in hold_df.index if x not in code_list and x in code_list_all])
-
+        last_hold = hold_df["amount"].reindex(code_list).fillna(0) / act
+        st_hold = hold_df["amount"].reindex(hold_df.index.difference(code_list).intersection(code_list_all))
+        
     # solve optimization problem
     stk_buy_weight = pd.Series([config.STK_BUY_R] * len(code_list), index=code_list)
     for code in zt_codes:
@@ -205,13 +205,13 @@ def solve_strategy(s, act, **kwargs):
     # get to buy and to sell series
     sort_index = td_score[0].sort_values(ascending=False).index  # sort by one of the td_score
     if len(s.hold_dict) == 0:  # first day build position, follow index
-        to_buy_s = round(tgt_hold).replace(0, np.nan).reindex(sort_index).dropna()  # sort by score
+        to_buy_s = round(tgt_hold).replace(0, np.nan).reindex(sort_index).dropna()
         to_buy_s = round(to_buy_s / td_preclose.reindex(to_buy_s.index))  # transform amount to quantity
         to_sell_s = pd.Series(dtype=float)
     else:
-        last_hold = hold_df["amt"].reindex(code_list).fillna(0)
+        last_hold = hold_df["amount"].reindex(code_list).fillna(0)
         to_trade_s = round(tgt_hold - last_hold).replace(0, np.nan)
-        to_buy_s = to_trade_s[to_trade_s > 0].reindex(sort_index).dropna()  # sort by score
+        to_buy_s = to_trade_s[to_trade_s > 0].reindex(sort_index).dropna()
         to_buy_s = round(to_buy_s / td_preclose.reindex(to_buy_s.index))  # transform amount to quantity
 
         to_sell_s = pd.concat([st_hold, -to_trade_s[to_trade_s < 0].reindex(sort_index).dropna().iloc[::-1]])  # sort by score
@@ -219,7 +219,7 @@ def solve_strategy(s, act, **kwargs):
 
     return to_buy_s, to_sell_s
 
-def solve_strategy_noon(s, act, sellable_amt, **kwargs):
+def solve_strategy_noon(s, act, sellable_amount, **kwargs):
     """Solve strategy: Optimize portfolio based on various constraints and scores."""
 
     code_list = kwargs.get('code_list')
@@ -240,8 +240,8 @@ def solve_strategy_noon(s, act, sellable_amt, **kwargs):
     td_score = td_score if isinstance(td_score, list) else [td_score]
 
     hold_df, _ = s.close_today()
-    last_hold = hold_df["amt"].reindex(code_list).fillna(0) / act
-    sellable = sellable_amt.set_index("code")["sellable_amt"].reindex(code_list).fillna(0) / act
+    last_hold = hold_df["amount"].reindex(code_list).fillna(0) / act
+    sellable = sellable_amount.set_index("code")["sellable_amount"].reindex(code_list).fillna(0) / act
 
     # solve optimization problem
     stk_buy_weight = pd.Series([config.STK_BUY_R] * len(code_list), index=code_list)
@@ -260,7 +260,7 @@ def solve_strategy_noon(s, act, sellable_amt, **kwargs):
                 stk_low=(td_mem - stk_perm)
                 .clip(0)
                 .clip(upper=last_hold + stk_buy_weight, lower=last_hold - 2 * config.STK_BUY_R)
-                .clip(lower=last_hold - sellable),
+                .clip(lower=last_hold - sellable),  # constraint the lower bound that cannot be sold today
                 stk_high=(td_mem + stk_perm)
                 .clip(upper=last_hold + stk_buy_weight, lower=last_hold - 2 * config.STK_BUY_R)
                 .clip(lower=last_hold - sellable),
@@ -386,7 +386,7 @@ def solve_strategy_noon(s, act, sellable_amt, **kwargs):
         to_buy_s = round(to_buy_s / td_preclose.reindex(to_buy_s.index))  # transform amount to quantity
         to_sell_s = pd.Series(dtype=float)
     else:
-        last_hold = hold_df["amt"].reindex(code_list).fillna(0)
+        last_hold = hold_df["amount"].reindex(code_list).fillna(0)
         to_trade_s = round(tgt_hold - last_hold).replace(0, np.nan)
         to_buy_s = to_trade_s[to_trade_s > 0].reindex(sort_index).dropna()  # sort by score
         to_buy_s = round(to_buy_s / td_preclose.reindex(to_buy_s.index))  # transform amount to quantity
@@ -395,7 +395,7 @@ def solve_strategy_noon(s, act, sellable_amt, **kwargs):
 
     return to_buy_s, to_sell_s
 
-def solve_strategy_second(s, act, sellable_amt, **kwargs):
+def solve_strategy_second(s, act, sellable_amount, **kwargs):
     """Solve strategy: Optimize portfolio based on various constraints and scores."""
 
     code_list = kwargs.get('code_list')
@@ -416,8 +416,8 @@ def solve_strategy_second(s, act, sellable_amt, **kwargs):
     td_score = td_score if isinstance(td_score, list) else [td_score]
 
     hold_df, _ = s.close_today()
-    last_hold = hold_df["amt"].reindex(code_list).fillna(0) / act
-    sellable = sellable_amt.set_index("code")["sellable_amt"].reindex(code_list).fillna(0) / act
+    last_hold = hold_df["amount"].reindex(code_list).fillna(0) / act
+    sellable = sellable_amount.set_index("code")["sellable_amount"].reindex(code_list).fillna(0) / act
 
     # solve optimization problem
     stk_buy_weight = pd.Series([config.STK_BUY_R] * len(code_list), index=code_list)
@@ -522,7 +522,7 @@ def solve_strategy_second(s, act, sellable_amt, **kwargs):
                     last_hold_init = solve_problem(
                         code_list=code_list,
                         x_last=last_hold_init,
-                        score=(td_score_single - td_score_single.min()) / (td_score_single.max() - td_score_single.min()),
+                        score=(td_score_single - td_score_single.min()) / (td_score_single.max() - td_score_single.min()),  # 0-1 normalized score (encourage full holding)
                         stk_low=(td_mem - stk_perm)
                         .clip(0)
                         .clip(upper=last_hold_init + stk_buy_weight_init, lower=last_hold_init - 2 * config.STK_BUY_R),
@@ -562,7 +562,7 @@ def solve_strategy_second(s, act, sellable_amt, **kwargs):
         to_buy_s = round(to_buy_s / td_preclose.reindex(to_buy_s.index))  # transform amount to quantity
         to_sell_s = pd.Series(dtype=float)
     else:
-        last_hold = hold_df["amt"].reindex(code_list).fillna(0)
+        last_hold = hold_df["amount"].reindex(code_list).fillna(0)
         to_trade_s = round(tgt_hold - last_hold).replace(0, np.nan)
         to_buy_s = to_trade_s[to_trade_s > 0].reindex(sort_index).dropna()  # sort by score
         to_buy_s = round(to_buy_s / td_preclose.reindex(to_buy_s.index))  # transform amount to quantity
@@ -585,25 +585,25 @@ def topn_strategy(s, act, **kwargs):
     if isinstance(td_score, list):
         # get to sell series
         if len(s.hold_dict) == 0:
-            last_hold, to_sell_amt, to_sell_s = pd.Series(dtype=float), 0, pd.Series(dtype=float)
+            last_hold, to_sell_amount, to_sell_s = pd.Series(dtype=float), 0, pd.Series(dtype=float)
         else:
             hold_df, _ = s.close_today()
-            last_hold = hold_df["amt"]
+            last_hold = hold_df["amount"]
             hold_score = td_score[0].reindex(hold_df.index).fillna(-np.inf).sort_values()
             top_codes = td_score[0].reindex(code_list_zt).sort_values(ascending=False).index[:tot_hold_num]
             sell_codes = [x for x in hold_score.index[:daily_sell_num] if x not in top_codes]
             st_sell = [x for x in hold_df.index if x not in code_list]
             sell_codes = list(set(sell_codes + st_sell))
             to_sell_s = hold_df["volume"].reindex(sell_codes).dropna()
-            to_sell_amt = hold_df["amt"].reindex(sell_codes).sum()
+            to_sell_amount = hold_df["amount"].reindex(sell_codes).sum()
 
         # get to buy series
         top_buy_codes = [c for c in td_score[0].reindex(code_list_zt).sort_values(ascending=False).index if c not in last_hold.index]
-        sgl_buy_amt = act / tot_hold_num
-        buy_num = round((s.cash + to_sell_amt) / sgl_buy_amt)
+        sgl_buy_amount = act / tot_hold_num
+        buy_num = round((s.cash + to_sell_amount) / sgl_buy_amount)
         if buy_num > 0:
-            buy_amt_s = pd.Series([sgl_buy_amt] * buy_num, index=top_buy_codes[:buy_num])
-            to_buy_s = (buy_amt_s / td_preclose.reindex(buy_amt_s.index)).round()
+            buy_amount_s = pd.Series([sgl_buy_amount] * buy_num, index=top_buy_codes[:buy_num])
+            to_buy_s = (buy_amount_s / td_preclose.reindex(buy_amount_s.index)).round()
         else:
             to_buy_s = pd.Series()
 
@@ -612,43 +612,42 @@ def topn_strategy(s, act, **kwargs):
     elif not isinstance(td_score, list):
         # get to sell series
         if len(s.hold_dict) == 0:
-            last_hold, to_sell_amt, to_sell_s = pd.Series(dtype=float), 0, pd.Series(dtype=float)
+            last_hold, to_sell_amount, to_sell_s = pd.Series(dtype=float), 0, pd.Series(dtype=float)
         else:
             hold_df, _ = s.close_today()
-            last_hold = hold_df["amt"]
+            last_hold = hold_df["amount"]
             hold_score = td_score.reindex(hold_df.index).fillna(-np.inf).sort_values()
             top_codes = td_score.reindex(code_list_zt).sort_values(ascending=False).index[:tot_hold_num]
             sell_codes = [x for x in hold_score.index[:daily_sell_num] if x not in top_codes]
             st_sell = [x for x in hold_df.index if x not in code_list]
             sell_codes = list(set(sell_codes + st_sell))
             to_sell_s = hold_df["volume"].reindex(sell_codes).dropna()
-            to_sell_amt = hold_df["amt"].reindex(sell_codes).sum()
+            to_sell_amount = hold_df["amount"].reindex(sell_codes).sum()
 
         # get to buy series
         top_buy_codes = [c for c in td_score.reindex(code_list_zt).sort_values(ascending=False).index if c not in last_hold.index]
-        sgl_buy_amt = act / tot_hold_num
-        buy_num = round((s.cash + to_sell_amt) / sgl_buy_amt)
+        sgl_buy_amount = act / tot_hold_num
+        buy_num = round((s.cash + to_sell_amount) / sgl_buy_amount)
         if buy_num > 0:
-            buy_amt_s = pd.Series([sgl_buy_amt] * buy_num, index=top_buy_codes[:buy_num])
-            to_buy_s = (buy_amt_s / td_preclose.reindex(buy_amt_s.index)).round()
+            buy_amount_s = pd.Series([sgl_buy_amount] * buy_num, index=top_buy_codes[:buy_num])
+            to_buy_s = (buy_amount_s / td_preclose.reindex(buy_amount_s.index)).round()
         else:
             to_buy_s = pd.Series()
 
         return to_buy_s, to_sell_s
 
-def record_trade(s, td_price, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, flag, close_fresh=None):
-    """Record trade: Update portfolio and cash based on trades executed."""
-    s.fresh_price(td_price.to_dict())
-    buy_amt, sell_amt = s.daily_trade(s.cash, to_buy_s, to_sell_s)
-    sellable_amt = s.cal_sellable_amt()
-    if close_fresh is not None:
-        s.fresh_price(close_fresh.to_dict())
-    act_s[date] = s.cal_total()
-    cash_s[date] = s.cash
-    buy_s[date + flag] = buy_amt
-    sell_s[date + flag] = sell_amt
-    hold_df, trade_df = s.close_today()
-    hold_df_dict[date + flag] = hold_df
-    trade_df_dict[date + flag] = trade_df
-
-    return hold_df, sellable_amt
+# def record_trade(s, td_price, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, flag, close_fresh=None):
+#     """Record trade: Update portfolio and cash based on trades executed."""
+#     s.fresh_price(td_price.to_dict())
+#     buy_amount, sell_amount = s.daily_trade(s.cash, to_buy_s, to_sell_s)
+#     sellable_amount = s.cal_sellable_amount()
+#     if close_fresh is not None:
+#         s.fresh_price(close_fresh.to_dict())
+#     act_s[date] = s.cal_total()
+#     cash_s[date] = s.cash
+#     buy_s[date + flag] = buy_amount
+#     sell_s[date + flag] = sell_amount
+#     hold_df, trade_df = s.close_today()
+#     hold_df_dict[date + flag] = hold_df
+#     trade_df_dict[date + flag] = trade_df
+#     return hold_df, sellable_amount

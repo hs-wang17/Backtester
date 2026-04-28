@@ -11,32 +11,34 @@
 1. **账户与交易管理 💰**
    - `src/account.py` 提供账户和股票持仓管理类，实现买入、卖出、每日刷新及交易日志记录。
    - 支持交易费、最小交易量、单位交易量等约束。
-   - 支持 5 和 7 交易约束规则。
+   - 支持 5、7、BARRA 交易约束规则。
 
 2. **数据加载与处理 📊**
-   - `src/data_loader.py` 负责从 feather 文件和 CSV 文件加载日度行情、前复权因子、涨跌停价及指数数据。
+   - 负责从 feather 文件和 CSV 文件加载日度行情、前复权因子、涨跌停价及指数数据。
    - 支持每日可交易股票筛选及复权处理。
    - 集成多种数据源支持，包括风格因子、行业分类、指数成分等。
 
 3. **组合优化引擎 🧮**
    - `src/portfolio_optimizer.py` 使用 CVXPY 求解组合优化问题。
-   - 支持多种约束：持仓上下限、行业/风格暴露、最大换手率、指数成分偏离等。
-   - 提供多种优化策略：solve（优化求解）和 topn（ Top N 选择）。
+   - 支持多种约束: 持仓上下限、行业/风格暴露、最大换手率、指数成分偏离等。
+   - 提供多种优化策略: solve（优化求解）和 topn（ Top N 选择）。
 
 4. **回测引擎 ⚡**
-   - `src/backtest.py` 提供完整回测流程：
+   - `src/backtest.py` 提供完整回测流程: 
      - 开盘前刷新账户信息
      - 基于组合优化生成每日目标持仓
      - 执行买卖操作并更新账户
      - 记录每日账户净值、现金、持仓和交易明细
 
+   - `src/backtest_continuous.py` 和 `src/backtest_continuous_general.py` 提供连续回测功能
+   - `src/backtest_apm.py` 提供 APM 回测功能
    - 支持多策略组合和指数比较。
 
 5. **策略分析与绩效评估 📈**
-   - `src/analysis.py` 提供全面的绩效指标计算：
-     - 基础指标：年化收益、波动、夏普比率、最大回撤、Calmar 比率
-     - 超额指标：超额年化收益、信息比率、超额最大回撤
-     - 交易指标：最大连续亏损天数、胜率(天)、换手率等
+   - `src/analysis.py` 提供全面的绩效指标计算: 
+     - 基础指标: 年化收益、波动、夏普比率、最大回撤、Calmar 比率
+     - 超额指标: 超额年化收益、信息比率、超额最大回撤
+     - 交易指标: 最大连续亏损天数、胜率(天)、换手率等
 
 6. **可视化与报告 🎨**
    - `src/plot.py` 支持 Matplotlib PNG 绘图。
@@ -46,13 +48,15 @@
 7. **工具函数库 🔧**
    - `src/utils.py` 提供每日行情和数据缓存、加载工具，提升回测效率。
    - `src/fusion.py` 支持多策略信号融合。
+   - `src/compare.py` 提供策略比较功能。
+   - `src/update_vwap_twap.py` 提供 VWAP/TWAP 更新功能。
 
 ### 高级功能模块
 
 8. **参数优化系统 🎯**
-   - **高斯过程优化** (`para_optimizer_gp/`): 基于 GP 的贝叶斯参数优化
-   - **有效前沿分析** (`para_optimizer_ef/`): 数学优化方法构建有效前沿
-   - 支持多目标优化：收益最大化、风险最小化、夏普比率优化
+   - **高斯过程优化**: 基于 GP 的贝叶斯参数优化
+   - **有效前沿分析**: 数学优化方法构建有效前沿
+   - 支持多目标优化: 收益最大化、风险最小化、夏普比率优化
    - 自动参数寻优和性能评估
 
 9. **Barra 风险模型 📊**
@@ -60,12 +64,17 @@
    - 支持风格因子、行业因子风险暴露分析
    - 风险归因和因子收益分解
 
-10. **多策略支持 🔄**
+10. **ETF 分析模块 📱**
+    - `etf/` 模块提供 ETF 投资组合分析功能
+    - 支持 ETF 组合净值计算和分析
+    - 提供 ETF 投资策略回测
+
+11. **多策略支持 🔄**
     - 支持单策略和多策略组合回测
     - 策略信号融合和权重分配
     - 策略间相关性分析
 
-11. **自动化脚本 🚀**
+12. **自动化脚本 🚀**
     - `scripts/` 目录提供多种自动化运行脚本
     - 支持批量回测、参数优化、结果分析
     - Screen 后台运行和日志管理
@@ -83,7 +92,7 @@ pip install pandas numpy matplotlib plotly cvxpy tqdm
 # 参数优化额外依赖
 pip install scikit-learn scipy
 
-# 可选：Jupyter 支持
+# 可选: Jupyter 支持
 pip install jupyter notebook
 ```
 
@@ -106,48 +115,54 @@ pip install -r requirements.txt  # 如果有 requirements.txt
 ```
 backtester/
 ├── run.py                           # 主回测入口
-├── temp.ipynb                       # 临时分析笔记本
+├── run_gp.py                        # GP优化入口
 ├── README.md                         # 项目说明文档
 ├── CHANGELOG                         # 版本更新日志
 ├── CONTRIBUTING.md                   # 贡献指南
 ├── LICENSE                          # 开源协议
+├── .gitignore                        # Git忽略文件
 │
 ├── src/                              # 核心回测模块
 │   ├── account.py                   # 账户和股票管理 💰
 │   ├── analysis.py                  # 回测结果分析 📈
 │   ├── backtest.py                  # 回测主逻辑 ⚡
+│   ├── backtest_apm.py              # APM回测逻辑
+│   ├── backtest_continuous.py       # 连续回测逻辑
+│   ├── backtest_continuous_general.py # 通用连续回测
 │   ├── config.py                    # 配置参数 ⚙️
-│   ├── data_loader.py               # 数据加载 📊
+│   ├── fusion.py                    # 多策略信号融合
+│   ├── compare.py                   # 策略比较
+│   ├── optimizer.py                 # 优化器
+│   ├── param_manager.py             # 参数管理器
 │   ├── plot.py                      # 回测可视化 🎨
 │   ├── portfolio_optimizer.py       # 组合优化 🧮
-│   ├── utils.py                     # 工具函数 🔧
-│   ├── fusion.py                    # 多策略信号融合
-│   ├── strategy.py                  # 策略基类
 │   ├── scores_analysis_gzh.py       # 评分分析工具
+│   ├── strategy.py                  # 策略基类
 │   ├── update_trade_support5.py     # 5约束更新
-│   └── update_trade_support7.py     # 7约束更新
+│   ├── update_trade_support7.py     # 7约束更新
+│   ├── update_vwap_twap.py          # VWAP/TWAP更新
+│   └── utils.py                     # 工具函数 🔧
 │
 ├── scripts/                          # 自动化脚本
 │   ├── run.sh                       # 基础回测脚本
+│   ├── run_copy.sh                  # 复制回测脚本
+│   ├── run_daily_update.sh          # 每日更新脚本
+│   ├── run_daily_update_10.sh       # 每日更新脚本(10)
+│   ├── run_daily_update_compare.sh  # 每日更新比较脚本
+│   ├── run_daily_update_fusion_10.sh # 每日更新融合脚本(10)
+│   ├── run_daily_update_noon.sh     # 午盘更新脚本
+│   ├── run_daily_update_noon_10.sh  # 午盘更新脚本(10)
+│   ├── run_mix_morining_label.sh    # 混合早盘标签脚本
+│   ├── run_mix_morining_noon.sh     # 混合早盘午盘脚本
+│   ├── run_mix_noon_label.sh        # 混合午盘标签脚本
+│   ├── run_para_ef.sh               # 有效前沿优化脚本
 │   ├── run_para_optimizer_gp5.sh    # GP优化脚本(5约束)
 │   ├── run_para_optimizer_gp7.sh    # GP优化脚本(7约束)
-│   ├── run_para_optimizer_co.sh     # 约束优化脚本
-│   ├── run_para_ef.sh               # 有效前沿优化脚本
 │   └── run_score_analysis.sh        # 评分分析脚本
-│
-├── para_optimizer_gp/               # 高斯过程参数优化
-│   ├── account.py                   # 优化专用账户管理
-│   ├── analysis.py                  # 优化结果分析
-│   ├── backtest.py                  # 优化回测逻辑
-│   ├── config.py                    # 优化配置
-│   ├── optimizer.py                 # GP优化器
-│   ├── param_manager.py             # 参数管理器
-│   ├── portfolio_optimizer.py       # 优化组合管理
-│   ├── run.py                       # 优化运行入口
-│   └── utils.py                     # 优化工具函数
 │
 ├── para_optimizer_ef/               # 有效前沿参数优化
 │   ├── run.py                       # 有效前沿运行入口
+│   ├── README.md                    # 有效前沿说明
 │   ├── src/                         # 优化源码
 │   │   ├── run_ratio_score_trade_support5.ipynb
 │   │   ├── run_ratio_score_trade_support7.ipynb
@@ -181,6 +196,13 @@ backtester/
 │           ├── test_mysql.py
 │           └── test.ipynb
 │
+├── etf/                             # ETF分析模块
+│   ├── data.ipynb                   # ETF数据分析
+│   ├── etf_portfolio_nav_with_capital.py # ETF组合净值计算
+│   ├── find_index.py                # 指数查找
+│   ├── temp.py                      # 临时脚本
+│   └── output/                      # ETF输出结果
+│
 ├── docs/                            # 详细文档
 │   ├── account.md                   # 账户管理文档
 │   ├── backtest.md                  # 回测引擎文档
@@ -190,8 +212,7 @@ backtester/
 │   └── portfolio_optimizer.md       # 组合优化文档
 │
 ├── image/                           # 图片资源
-│   ├── chart.png                    # 回测结果图
-│   └── chart_ui.png                 # 交互式回测图
+│   └── chart.png                    # 回测结果图
 │
 ├── results/                         # 回测结果目录（运行时生成）
 │   └── backtests/                   # 回测报告存储
@@ -204,7 +225,7 @@ backtester/
 
 #### 数据路径配置
 
-修改 `src/config.py` 中的关键路径：
+修改 `src/config.py` 中的关键路径: 
 
 ```python
 # 数据路径配置
@@ -242,20 +263,20 @@ MEM_HOLD = 0.2               # 成分股持仓比例
 
 #### 必需数据文件
 
-- **日度行情数据**（feather格式）：
+- **日度行情数据**（feather格式）: 
   - `stk_close` - 收盘价
   - `stk_preclose` - 前收盘价
   - `stk_adjfactor` - 复权因子
   - `stk_ztprice` - 涨停价
   - `stk_dtprice` - 跌停价
 
-- **指数数据**：
+- **指数数据**: 
   - `idx_close` - 指数收盘价
 
-- **策略评分文件**：
+- **策略评分文件**: 
   - `predictions/SCORES_PATH.csv` - 包含股票预测评分
 
-- **支持数据**：
+- **支持数据**: 
   - 风格因子数据
   - 行业分类数据
   - 指数成分股数据
@@ -274,14 +295,13 @@ python run.py --scores_path "/path/to/scores.csv" --trade_support 7
 python run.py --scores_path "/path/to/scores.csv" --trade_support 7 --strategy topn
 ```
 
-或者
+#### 批量回测
 
 ```bash
-screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run.sh > /home/haris/logs/backtest_20251202.log 2>&1'
-screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp5.sh > /home/haris/logs/backtest_para_opt_20251226.log 2>&1'
-screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_gp7.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
-screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_optimizer_co.sh > /home/haris/logs/backtest_para_opt_20251202.log 2>&1'
-screen -dmS backtester bash -c 'bash /home/haris/project/backtester/scripts/run_para_ef.sh > /home/haris/logs/backtest_para_ef_20260302.log 2>&1'
+# 使用脚本批量运行
+screen -dmS backtester bash -c 'bash scripts/run.sh > logs/backtest.log 2>&1'
+screen -dmS backtester bash -c 'bash scripts/run_daily_update.sh > logs/daily_update.log 2>&1'
+screen -dmS backtester bash -c 'bash scripts/run_daily_update_noon.sh > logs/daily_update_noon.log 2>&1'
 ```
 
 #### 多策略组合回测
@@ -317,18 +337,26 @@ python run.py --scores_path "/path/to/scores1.csv,/path/to/scores2.csv" --trade_
 
 ```bash
 # 高斯过程参数优化
-screen -dmS gp_opt_5 bash -c 'bash scripts/run_para_optimizer_gp5.sh > logs/gp_opt_5.log 2>&1'
-screen -dmS gp_opt_7 bash -c 'bash scripts/run_para_optimizer_gp7.sh > logs/gp_opt_7.log 2>&1'
+python run_gp.py --scores_path "/path/to/scores.csv" --trade_support 5
 
 # 有效前沿参数优化
-screen -dmS ef_opt bash -c 'bash /home/haris/project/backtester/scripts/run_para_ef.sh > /home/haris/logs/backtest_para_opt_20260129_ef.log'
+screen -dmS ef_opt bash -c 'bash scripts/run_para_ef.sh > logs/backtest_para_ef.log'
 ```
 
-#### 批量回测
+#### ETF 分析
 
 ```bash
-# 使用脚本批量运行
-screen -dmS backtester bash -c 'bash scripts/run.sh > logs/backtest.log 2>&1'
+# 运行 ETF 组合分析
+cd etf
+python etf_portfolio_nav_with_capital.py
+```
+
+#### Barra 风险分析
+
+```bash
+# 运行 Barra 风险模型
+cd barra
+python barra/src/main.py
 ```
 
 ### 5. 结果查看与分析 📊
@@ -343,9 +371,15 @@ print(result.keys())
 
 #### 关键输出文件
 
-- **PNG 报告**：`results/backtests/{STRATEGY_NAME}.png`
-- **持仓明细**：`results/backtests/{STRATEGY_NAME}_positions.csv`
-- **交易记录**：`results/backtests/{STRATEGY_NAME}_trades.csv`
+- **PNG 报告**: `results/backtests/{STRATEGY_NAME}.png`
+- **持仓明细**: `results/backtests/{STRATEGY_NAME}_positions.csv`
+- **交易记录**: `results/backtests/{STRATEGY_NAME}_trades.csv`
+
+#### ETF 分析输出
+
+- **ETF 组合结果**: `etf/output/portfolio_nav_results_*.csv`
+- **ETF 净值曲线**: `etf/output/portfolio_nav_curve_*.png`
+- **ETF 分析日志**: `etf/output/etf_analysis_*.log`
 
 #### 可视化报告示例
 
@@ -392,12 +426,22 @@ config.update_from_args(args)
 result = run_backtest()
 ```
 
+### ETF 分析示例
+
+```python
+# ETF 组合分析
+from etf.etf_portfolio_nav_with_capital import analyze_etf_portfolio
+
+# 运行 ETF 分析
+analyze_etf_portfolio()
+```
+
 ### 输出文件路径
 
-- **PNG 报告**：`results/backtests/{STRATEGY_NAME}.png`
-- **HTML 交互报告**：`results/backtests/{STRATEGY_NAME}.html`
-- **持仓明细**：`results/backtests/{STRATEGY_NAME}_positions.csv`
-- **交易记录**：`results/backtests/{STRATEGY_NAME}_trades.csv`
+- **PNG 报告**: `results/backtests/{STRATEGY_NAME}.png`
+- **持仓明细**: `results/backtests/{STRATEGY_NAME}_positions.csv`
+- **交易记录**: `results/backtests/{STRATEGY_NAME}_trades.csv`
+- **ETF 分析结果**: `etf/output/` 目录
 
 ---
 
@@ -409,11 +453,10 @@ result = run_backtest()
 
 ```python
 # 运行 GP 参数优化
-cd para_optimizer_gp
-python run.py --scores_path "/path/to/scores.csv" --trade_support 5
+python run_gp.py --scores_path "/path/to/scores.csv" --trade_support 5
 ```
 
-**特点：**
+**特点: **
 
 - 基于贝叶斯优化的智能参数搜索
 - 自动平衡探索与利用
@@ -425,10 +468,10 @@ python run.py --scores_path "/path/to/scores.csv" --trade_support 5
 ```python
 # 运行有效前沿优化
 cd para_optimizer_ef
-jupyter notebook src/run_ratio_score_trade_support5.ipynb
+python run.py
 ```
 
-**特点：**
+**特点: **
 
 - 数学严格的有效前沿构建
 - 支持多种风险收益目标
@@ -440,15 +483,32 @@ jupyter notebook src/run_ratio_score_trade_support5.ipynb
 ```python
 # 使用 Barra 风险模型
 cd barra
-python src/main.py
+python barra/src/main.py
 ```
 
-**功能：**
+**功能: **
 
 - 风格因子暴露分析
 - 行业因子风险控制
 - 风险归因分析
 - 因子收益分解
+
+### ETF 分析模块
+
+```python
+# ETF 组合分析
+from etf.etf_portfolio_nav_with_capital import analyze_etf_portfolio
+
+# 运行分析
+analyze_etf_portfolio()
+```
+
+**功能: **
+
+- ETF 组合净值计算
+- 不同权重策略比较
+- 净值曲线可视化
+- 绩效指标分析
 
 ### 多策略融合
 
@@ -472,6 +532,7 @@ fused_scores = fuse_strategies([
 
 - [账户管理详解](docs/account.md) - 账户、持仓、交易机制
 - [回测引擎详解](docs/backtest.md) - 回测流程、事件驱动机制
+- [策略分析详解](docs/analysis.md) - 绩效指标计算、分析方法
 - [组合优化详解](docs/portfolio_optimizer.md) - 优化模型、约束设置
 - [金融指标说明](docs/financial_metrics.md) - 各项指标计算方法
 
@@ -506,6 +567,14 @@ def add_custom_constraints(prob, weights, data):
     return prob
 ```
 
+### Q3: 如何使用 ETF 分析模块？
+
+```python
+# 运行 ETF 分析
+cd etf
+python etf_portfolio_nav_with_capital.py
+```
+
 ---
 
 ## 开发与扩展 🔧
@@ -528,12 +597,12 @@ class CustomStrategy(BaseStrategy):
 ### 扩展数据源
 
 ```python
-from src.data_loader import DataLoader
+# 扩展数据源加载
+from src.utils import load_custom_data
 
-class CustomDataLoader(DataLoader):
-    def load_custom_data(self, path):
-        # 加载自定义数据源
-        return data
+def load_my_data(path):
+    # 加载自定义数据源
+    return data
 ```
 
 ### 添加新的优化器
@@ -549,20 +618,21 @@ class CustomOptimizer(BaseOptimizer):
 
 ### 扩展方向
 
-- **机器学习集成**：集成深度学习模型进行信号预测
-- **实时交易支持**：扩展为实盘交易系统
-- **多资产类别**：支持债券、期货、期权等多资产
-- **风险管理增强**：添加更多风险控制和压力测试功能
-- **高频策略支持**：支持分钟级、秒级高频策略回测
+- **机器学习集成**: 集成深度学习模型进行信号预测
+- **实时交易支持**: 扩展为实盘交易系统
+- **多资产类别**: 支持债券、期货、期权等多资产
+- **风险管理增强**: 添加更多风险控制和压力测试功能
+- **高频策略支持**: 支持分钟级、秒级高频策略回测
+- **ETF 策略扩展**: 开发更多 ETF 投资策略
 
 ---
 
 ## 社区与支持 🤝
 
-- **问题反馈**：通过 [Issues](https://github.com/your-repo/issues) 提交问题
-- **功能建议**：欢迎提出新功能想法和改进建议
-- **代码贡献**：欢迎提交 Pull Request 参与项目开发
-- **技术交流**：加入技术讨论群进行交流
+- **问题反馈**: 通过 [Issues](https://github.com/your-repo/issues) 提交问题
+- **功能建议**: 欢迎提出新功能想法和改进建议
+- **代码贡献**: 欢迎提交 Pull Request 参与项目开发
+- **技术交流**: 加入技术讨论群进行交流
 
 ---
 

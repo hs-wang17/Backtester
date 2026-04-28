@@ -11,7 +11,7 @@ def solve_problem(
     stk_high,
     tot_weight,
     sell_max,
-    td_mem,
+    td_mem,  # index member weight vector (dummy variable)
     td_mem_weight,
     td_ind,
     td_ind_up,
@@ -45,9 +45,9 @@ def solve_problem(
     sell_max : float
         Maximum weight of money available for selling each day
     td_mem : pd.Series
-        Memory of each stock
+        Memember of each stock (dummy variable)
     td_mem_weight : float
-        Weight of memory for each stock
+        Weight of member for each stock
     td_ind : pd.Series
         Industry of each stock
     td_ind_up : pd.Series

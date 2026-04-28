@@ -14,7 +14,7 @@
 # 2-1) solve trade support 5 (afternoon)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260316_113125.csv --trade_support 5 --afternoon_start True
 # 2-2) solve trade support 7 (afternoon)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260411.csv --trade_support 7 --afternoon_start True
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260412.csv --trade_support 7 --afternoon_start True
 # 2-3) solve trade support barra (afternoon)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/results/predictions/StockPredictor_20260302.csv --trade_support 8 --afternoon_start True
 
@@ -29,7 +29,7 @@
 # 4-1) solve trade support 5 (continuous general mode)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_10/predictions/StockPredictor_20260306_merged_all_stocks.csv --trade_support 5 --continuous_general_mode True
 # 4-2) solve trade support 7 (continuous general mode)
-/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_10/predictions/StockPredictor_20260306_merged_all_stocks.csv --trade_support 7 --continuous_general_mode True  --turn_max 0.0106192832827463 --turn_max_second 0.0106192832827463
+/home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_10/predictions/StockPredictor_20260306_merged_all_stocks.csv --trade_support 7 --continuous_general_mode True --turn_max 0.0106192832827463 --turn_max_second 0.0106192832827463
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_noon_10/predictions/StockPredictor_20260308_merged_all_stocks.csv --trade_support 7 --afternoon_start True --continuous_general_mode True  --turn_max 0.0106192832827463 --turn_max_second 0.0106192832827463
 # 4-3) solve trade support barra (continuous general mode)
 /home/haris/miniconda3/envs/myenv/bin/python /home/haris/project/backtester/run.py --scores_path /home/haris/mymodel_10/predictions/StockPredictor_20260306_merged_all_stocks.csv --trade_support 8 --continuous_general_mode True

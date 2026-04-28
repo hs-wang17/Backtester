@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument("--stk_hold_limit", type=float, default=None, help="Stock hold limit")
     parser.add_argument("--strategy", type=str, default="solve", help="Strategy type (solve or topn)")
     parser.add_argument("--tot_hold_num", type=int, default=None, help="Total hold number")
-    parser.add_argument("--trade_support", type=int, required=True, help="Trade support type (5 or 7)")
+    parser.add_argument("--trade_support", type=int, required=True, help="Trade support type (5/7/8)")
     parser.add_argument("--turn_max", type=float, default=None, help="Turn max")
     parser.add_argument("--turn_max_noon", type=float, default=None, help="Turn max for noon trading")
     parser.add_argument("--turn_max_second", type=float, default=None, help="Turn max for second")

@@ -1,386 +1,141 @@
 import pandas as pd
 
 
-class stk:
-    """
-    A class representing a stock.
-    """
-
+class stock:
     def __init__(self, code, price, up_price, low_price, trade_fee=0.001):
-        """
-        Initialize a stock object.
-
-        Parameters
-        ----------
-        code : str
-            Stock code.
-        price : float
-            Current price of the stock.
-        up_price : float
-            Upper limit price of the stock.
-        low_price : float
-            Lower limit price of the stock.
-        sellable_vol : float
-            The volume of stock that can be sold.
-            (The initial value is 0. After buying, the value equals volume last day.)
-        trade_fee : float, optional
-            Transaction fee and shock cost of the stock, default is 0.001.
-            (Only used when selling the stock.)
-        volume : float
-            The volume of stock held.
-            (The initial value is 0.)
-        amt : float
-            The total amount of stock held.
-            (The initial value is 0.)
-        minimum_vol : float
-            The minimum volume of stock that can be bought.
-            (The initial value is 200 for 68 stocks and 100 for other stocks.
-            The stocks starting with 68 are STAR Market stocks, which have a minimum trading unit of 200 shares.
-            The other stocks have a minimum trading unit of 100 shares.)
-        unit_vol : float
-            The trading unit of the stock.
-            (The initial value is 1 for 68 stocks and 100 for other stocks.
-            The stocks starting with 68 are STAR Market stocks, which can be traded in units of 1 share.
-            The other stocks can be traded in units of 100 shares.)
-        """
         self.code, self.price, self.up_price, self.low_price = code, price, up_price, low_price
-        self.sellable_vol, self.trade_fee, self.volume, self.amt = 0, trade_fee, 0, 0
-        self.minimum_vol = 200 if ("%06d" % int(code))[:2] == "68" else 100
-        self.unit_vol = 1 if ("%06d" % int(code))[:2] == "68" else 100
+        self.sellable_volume, self.trade_fee, self.volume, self.amount = 0.0, trade_fee, 0.0, 0.0
+        self.minimum_volume = 200 if ("%06d" % int(code))[:2] == "68" else 100
+        self.unit_volume = 1 if ("%06d" % int(code))[:2] == "68" else 100
 
     def update_price(self, price):
-        """
-        Update the price of the stock.
-
-        Parameters
-        ----------
-        price : float
-            New price of the stock.
-
-        Notes
-        -----
-        This function updates the price of the stock and also updates the total amount of the stock.
-        """
         self.price = price
-        self.amt = self.volume * price
+        self.amount = self.volume * price
 
     def update_info(self, price, up_price, low_price):
-        """
-        Update the price, upper limit price and lower limit price of the stock.
-
-        Parameters
-        ----------
-        price : float
-            New price of the stock.
-        up_price : float
-            New upper limit price of the stock.
-        low_price : float
-            New lower limit price of the stock.
-        """
         self.update_price(price)
         self.up_price, self.low_price = up_price, low_price
 
     def buy(self, volume):
-        """
-        Buy a certain amount of stock.
-
-        Parameters
-        ----------
-        volume : float
-            The amount of stock to buy.
-
-        Returns
-        -------
-        amt : float
-            The total amount of money spent on buying the stock.
-
-        Notes
-        -----
-        This function buys a certain amount of stock and updates the total amount of the stock.
-        """
-        amt = volume * self.price
+        amount = volume * self.price
         self.volume += volume
-        self.amt = self.volume * self.price
-        return amt
+        self.amount = self.volume * self.price
+        return amount
 
     def sell(self, volume):
-        """
-        Sell a certain amount of stock.
-
-        Parameters
-        ----------
-        volume : float
-            The amount of stock to sell.
-
-        Returns
-        -------
-        amt : float
-            The total amount of money gained from selling the stock.
-
-        Notes
-        -----
-        This function sells a certain amount of stock and updates the total amount of the stock.
-        """
-        amt = volume * self.price * (1 - self.trade_fee)
+        amount = volume * self.price * (1 - self.trade_fee)
         self.volume -= volume
-        self.sellable_vol -= volume
-        self.amt = self.volume * self.price
-        return amt
+        self.sellable_volume -= volume
+        self.amount = self.volume * self.price
+        return amount
 
 
 class account:
-    """
-    A class representing an account.
-    """
-
     def __init__(self, money):
-        """
-        Initialize an account object.
-
-        Parameters
-        ----------
-        money : float
-            The total amount of money in the account.
-        cash : float
-            The total amount of currency available in the account.
-        total_account : float
-            The total amount of assets in the account including cash and stocks.
-            (The initial value is 0.)
-        hold_dict : dict
-            A dictionary containing the stocks held in the account.
-        trade_dict : dict
-            A dictionary containing the trading records of the account.
-
-        Notes
-        -----
-        This function initializes an account object with a given amount of money.
-        """
         self.cash, self.total_account, self.hold_dict, self.trade_dict, self.date = money, money, {}, {}, None
 
     def cal_total(self):
-        """
-        Calculate the total amount of money in the account.
-
-        Returns
-        -------
-        total_account : float
-            The total amount of money in the account.
-
-        Notes
-        -----
-        This function calculates the total amount of money in the account by summing up the value of all the stocks held and the cash available.
-        """
-        self.total_account = self.cash + sum(stk.amt for stk in self.hold_dict.values())
+        self.total_account = self.cash + sum(stk.amount for stk in self.hold_dict.values())
         return self.total_account
 
     def refresh_open(self, td_upper, td_lower, td_preclose, td_adj):
-        """
-        Refresh the account information at the start of a trading day.
-
-        Parameters
-        ----------
-        td_upper : pandas.Series
-            The upper limit prices for each stock.
-        td_lower : pandas.Series
-            The lower limit prices for each stock.
-        td_preclose : pandas.Series
-            The previous close prices for each stock.
-        td_adj : pandas.Series
-            The daily adjustment factors for each stock.
-
-        Returns
-        -------
-        float
-            The total amount of money in the account.
-
-        Notes
-        -----
-        This function refreshes the account information at the start of a trading day by updating the upper limit prices, lower limit prices, and previous close prices for each stock.
-        """
         self.td_upper, self.td_lower, self.td_price_now = td_upper, td_lower, td_preclose
-        for code, st in self.hold_dict.items():
-            st.update_info(td_preclose[code], td_upper[code], td_lower[code])
+        for code, stk in self.hold_dict.items():
+            stk.update_info(td_preclose[code], td_upper[code], td_lower[code])
             if code in td_adj:
-                st.volume *= td_adj[code]
-                st.amt = st.volume * st.price
-            st.sellable_vol = st.volume
+                stk.volume *= td_adj[code]
+                stk.amount = stk.volume * stk.price
+            stk.sellable_volume = stk.volume
         return self.cal_total()
 
-    def cal_sellable_amt(self):
+    def cal_sellable_amount(self):
         rows = []
-        for code, st in self.hold_dict.items():
-            sellable_amt = st.sellable_vol * st.price
-            rows.append({"code": code, "sellable_amt": sellable_amt})
-        return pd.DataFrame(rows, columns=["code", "sellable_amt"])
+        for code, stk in self.hold_dict.items():
+            sellable_amount = stk.sellable_volume * stk.price
+            rows.append({"code": code, "sellable_amount": sellable_amount})
+        return pd.DataFrame(rows, columns=["code", "sellable_amount"])
 
-    def log_trade(self, code, price, vol):
-        """
-        Log a trade.
+    def log_trade(self, code, price, volume):
+        self.trade_dict.setdefault(code, []).append([volume, price, self.date])
+        
+    def record_trade(self, td_price, to_buy_s, to_sell_s, date, act_s, cash_s, buy_s, sell_s, hold_df_dict, trade_df_dict, flag, close_fresh=None):
+        self.fresh_price(td_price.to_dict())
+        buy_amount, sell_amount = self.daily_trade(self.cash, to_buy_s, to_sell_s)
+        sellable_amount = self.cal_sellable_amount()
+        if close_fresh is not None:
+            self.fresh_price(close_fresh.to_dict())
+        act_s[date] = self.cal_total()
+        cash_s[date] = self.cash
+        buy_s[date + flag] = buy_amount
+        sell_s[date + flag] = sell_amount
+        hold_df, trade_df = self.close_today()
+        hold_df_dict[date + flag] = hold_df
+        trade_df_dict[date + flag] = trade_df
+        return hold_df, sellable_amount
 
-        Parameters
-        ----------
-        code : str
-            The stock code.
-        price : float
-            The price of the stock.
-        vol : float
-            The volume of the stock.
+    def buy_stk(self, code, volume):
+        amount = self.hold_dict[code].buy(volume)
+        self.log_trade(code, self.hold_dict[code].price, volume)
+        self.cash -= amount
+        return amount
 
-        Notes
-        -----
-        This function logs a trade by storing the trade information in the trade_dict.
-        """
-        self.trade_dict.setdefault(code, []).append([vol, price, self.date])
-
-    def buy_stk(self, code, vol):
-        """
-        Buy a certain amount of stock.
-
-        Parameters
-        ----------
-        code : str
-            The stock code.
-        vol : float
-            The volume of the stock to buy.
-
-        Returns
-        -------
-        amt : float
-            The total amount of money spent on buying the stock.
-
-        Notes
-        -----
-        This function buys a certain amount of stock and updates the total amount of the stock.
-        """
-        amt = self.hold_dict[code].buy(vol)
-        self.log_trade(code, self.hold_dict[code].price, vol)
-        self.cash -= amt
-        return amt
-
-    def sell_stk(self, code, vol):
-        """
-        Sell a certain amount of stock.
-
-        Parameters
-        ----------
-        code : str
-            The stock code.
-        vol : float
-            The volume of the stock to sell.
-
-        Returns
-        -------
-        amt : float
-            The total amount of money gained from selling the stock.
-
-        Notes
-        -----
-        This function sells a certain amount of stock and updates the total amount of the stock.
-        """
-        amt = self.hold_dict[code].sell(vol)
-        self.log_trade(code, self.hold_dict[code].price, -vol)
+    def sell_stk(self, code, volume):
+        amount = self.hold_dict[code].sell(volume)
+        self.log_trade(code, self.hold_dict[code].price, -volume)
         if self.hold_dict[code].volume == 0:
             del self.hold_dict[code]
-        self.cash += amt
-        return amt
+        self.cash += amount
+        return amount
 
     def fresh_price(self, price_s):
-        """
-        Refresh the price of all stocks in the portfolio.
-
-        Parameters
-        ----------
-        price_s : dict
-            A dictionary of stock codes and their prices.
-
-        Notes
-        -----
-        This function updates the prices of all stocks in the portfolio.
-        """
         self.td_price_now = price_s
-        for code, st in self.hold_dict.items():
+        for code, stk in self.hold_dict.items():
             if code in price_s:
-                st.update_price(price_s[code])
+                stk.update_price(price_s[code])
 
     def daily_trade(self, cash_avail, to_buy_s, to_sell_s):
-        """
-        Daily trade function. This function sells all the stocks that needs to be sold and buys all the stocks that needs to be bought.
-        The function first sells all the stocks that needs to be sold, then buys all the stocks that needs to be bought.
-        The function will stop buying if the total amount of money gained from selling is not enough to buy all the stocks that needs to be bought.
-        Parameters
-        ----------
-        cash : float
-            The total amount of money available for trading.
-        to_buy_s : dict
-            A dictionary of stock codes and their corresponding the volume of the stock to buy.
-        to_sell_s : dict
-            A dictionary of stock codes and their the volume of the stock to sell.
-        Returns
-        -------
-        total_buy : float
-            The total amount of money gained from buying.
-        total_sell : float
-            The total amount of money gained from selling.
-        Notes
-        -----
-        This function does not update the prices of the stocks in the portfolio.
-        """
-        total_buy, total_sell = 0, 0
+        total_buy, total_sell = 0.0, 0.0
 
         # sell
         for code in to_sell_s.index:
             if code not in self.hold_dict:
                 continue
-            st = self.hold_dict[code]
-            if st.low_price < st.price < st.up_price:
-                if st.sellable_vol <= st.minimum_vol:
-                    sell_vol = st.sellable_vol
+            stk = self.hold_dict[code]
+            if stk.low_price < stk.price < stk.up_price:
+                if stk.sellable_volume <= stk.minimum_volume:
+                    sell_volume = stk.sellable_volume
                 else:
-                    sell_vol = min(round(to_sell_s[code] / st.unit_vol) * st.unit_vol, st.sellable_vol)
-                if st.sellable_vol <= st.minimum_vol or sell_vol >= st.minimum_vol:
-                    total_sell += self.sell_stk(code, sell_vol)
+                    sell_volume = min(round(to_sell_s[code] / stk.unit_volume) * stk.unit_volume, stk.sellable_volume)
+                if stk.sellable_volume <= stk.minimum_volume or sell_volume >= stk.minimum_volume:
+                    total_sell += self.sell_stk(code, sell_volume)
 
         # buy
         for code in to_buy_s.index:
-            if total_buy >= cash_avail + total_sell - 1000:
+            if total_buy >= cash_avail + total_sell - 1000.0:
                 break
             if code not in self.hold_dict:
                 try:
-                    self.hold_dict[code] = stk(code, self.td_price_now[code], self.td_upper[code], self.td_lower[code])
+                    self.hold_dict[code] = stock(code, self.td_price_now[code], self.td_upper[code], self.td_lower[code])
                 except:
-                    continue  # TODO: debug self.td_price_now[code] key error
-            st = self.hold_dict[code]
-            if st.low_price < st.price < st.up_price:
-                vol = min(
-                    round(to_buy_s[code] / st.unit_vol) * st.unit_vol,
-                    int((cash_avail + total_sell - total_buy) / (st.price * st.unit_vol)) * st.unit_vol,
+                    continue
+            stk = self.hold_dict[code]
+            if stk.low_price < stk.price < stk.up_price:
+                volume = min(
+                    round(to_buy_s[code] / stk.unit_volume) * stk.unit_volume,
+                    int((cash_avail + total_sell - total_buy) / (stk.price * stk.unit_volume)) * stk.unit_volume,
                 )
-                if vol >= st.minimum_vol:
-                    total_buy += self.buy_stk(code, vol)
-                if st.volume <= 0:
+                if volume >= stk.minimum_volume:
+                    total_buy += self.buy_stk(code, volume)
+                if stk.volume <= 0:
                     del self.hold_dict[code]
         return total_buy, total_sell
 
     def close_today(self):
-        """
-        This function closes all the positions today and returns the holding information and the trading information.
-        The function first constructs the holding DataFrame from the holding dictionary, then constructs the trading DataFrame from the trading dictionary.
-        Finally, it clears the trading dictionary and returns the holding DataFrame and the trading DataFrame.
-        Returns
-        -------
-        hold_df : pd.DataFrame
-            A DataFrame containing the holding information.
-        trade_df : pd.DataFrame
-            A DataFrame containing the trading information.
-        Notes
-        -----
-        This function does not update the prices of the stocks in the portfolio.
-        """
         if not self.hold_dict:
-            hold_df = pd.DataFrame(columns=["volume", "amt"])
+            hold_df = pd.DataFrame(columns=["volume", "amount"])
         else:
-            hold_df = pd.DataFrame({c: [s.volume, s.amt] for c, s in self.hold_dict.items()}).T.sort_index()
-            hold_df.columns = ["volume", "amt"]
+            hold_df = pd.DataFrame({c: [stk.volume, stk.amount] for c, stk in self.hold_dict.items()}).T.sort_index()
+            hold_df.columns = ["volume", "amount"]
 
         trade_df = (
             pd.concat([pd.DataFrame(v) for v in self.trade_dict.values()], keys=self.trade_dict.keys()).reset_index(level=1, drop=True)
